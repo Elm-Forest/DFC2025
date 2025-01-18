@@ -14,7 +14,6 @@ import segmentation_models_pytorch as smp
 
 warnings.filterwarnings("ignore")
 
-
 # class palette
 class_rgb = {
     "Bareland": [128, 0, 0],
@@ -26,7 +25,6 @@ class_rgb = {
     "Cropland": [75, 181, 73],
     "buildings": [222, 31, 7],
 }
-
 
 # class labels
 class_gray = {
@@ -50,7 +48,7 @@ def label2rgb(a):
         out[a == v, 0] = class_rgb[k][0]
         out[a == v, 1] = class_rgb[k][1]
         out[a == v, 2] = class_rgb[k][2]
-    
+
     return out
 
 
@@ -58,8 +56,8 @@ def test_model(args, model, device):
     # path to save predictions
     os.makedirs(args.save_results, exist_ok=True)
     # load test data
-    test_fns = [f for f in Path(args.data_root).rglob("*.tif") if "/sar_images/" in str(f)]
-    
+    test_fns = [f for f in Path(args.data_root).rglob("*.tif") if "sar_images" in str(f)]
+    print(test_fns)
     for fn_img in test_fns:
         img = source.dataset.load_grayscale(fn_img)
         h, w = img.shape[:2]
@@ -80,19 +78,19 @@ def test_model(args, model, device):
             msk = model(input_)
             msk = torch.softmax(msk[:, :, ...], dim=1)
             msk = msk.cpu().numpy()
-            pred = (msk[0, :, :, :] + msk[1, :, :, ::-1] + msk[2, :, ::-1, :] + msk[3, :, ::-1, ::-1])/4
+            pred = (msk[0, :, :, :] + msk[1, :, :, ::-1] + msk[2, :, ::-1, :] + msk[3, :, ::-1, ::-1]) / 4
         pred = pred.argmax(axis=0).astype("uint8")
 
         y_pr = cv2.resize(pred, (w, h), interpolation=cv2.INTER_NEAREST)
         # save image as png
         filename = os.path.splitext(os.path.basename(fn_img))[0]
-        # y_pr_rgb = label2rgb(y_pr)
-        Image.fromarray(y_pr).save(os.path.join(args.save_results, filename+'.png'))
-        print('Processed file:', filename+'.png')
+        y_pr_rgb = label2rgb(y_pr)
+        Image.fromarray(y_pr_rgb).save(os.path.join(args.save_results, filename + '.png'))
+        print('Processed file:', filename + '.png')
     print("Done!")
     print("Total files processed: ", len(test_fns))
-    
-    
+
+
 def main(args):
     seed = args.seed
     np.random.seed(seed)
@@ -101,11 +99,11 @@ def main(args):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    
-    n_classes = len(args.classes)+1
+
+    n_classes = len(args.classes) + 1
     model = smp.Unet(
         classes=n_classes,
-        in_channels = 1,
+        in_channels=1,
         activation=None,
         encoder_weights="imagenet",
         encoder_name="efficientnet-b4",
@@ -113,22 +111,21 @@ def main(args):
     )
     model.load_state_dict(torch.load(args.pretrained_model))
     model.to(device).eval()
-    
+
     # test model
     test_model(args, model, device)
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', default=0)
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
-    parser.add_argument('--data_root', default="dataset/test")
-    parser.add_argument('--pretrained_model', default="pretrained/SAR_Pesudo_u-efficientnet-b4_s0_CELoss.pth") 
+    parser.add_argument('--data_root', default="K:/dataset/dfc25/test_train")
+    parser.add_argument('--pretrained_model', default="pretrained/SAR_Pesudo_u-efficientnet-b4_s0_CELoss.pth")
     parser.add_argument('--save_results', default="results")
     args = parser.parse_args()
-    
+
     start = time.time()
     main(args)
     end = time.time()
     print('Processing time:', end - start)
-    
