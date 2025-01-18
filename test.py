@@ -1,16 +1,18 @@
+import argparse
+import math
 import os
 import time
-import numpy as np
-import torch
-import torchvision.transforms.functional as TF
-import math
-import cv2
-from PIL import Image
-import argparse
 import warnings
 from pathlib import Path
-import source
+
+import cv2
+import numpy as np
 import segmentation_models_pytorch as smp
+import torch
+import torchvision.transforms.functional as TF
+from PIL import Image
+
+import source
 
 warnings.filterwarnings("ignore")
 
@@ -84,8 +86,9 @@ def test_model(args, model, device):
         y_pr = cv2.resize(pred, (w, h), interpolation=cv2.INTER_NEAREST)
         # save image as png
         filename = os.path.splitext(os.path.basename(fn_img))[0]
-        y_pr_rgb = label2rgb(y_pr)
-        Image.fromarray(y_pr_rgb).save(os.path.join(args.save_results, filename + '.png'))
+        res = y_pr
+        # res = label2rgb(y_pr)
+        Image.fromarray(res).save(os.path.join(args.save_results, filename + '.png'))
         print('Processed file:', filename + '.png')
     print("Done!")
     print("Total files processed: ", len(test_fns))
@@ -109,7 +112,22 @@ def main(args):
         encoder_name="efficientnet-b4",
         decoder_attention_type="scse",
     )
-    model.load_state_dict(torch.load(args.pretrained_model))
+
+    if args.pretrained_model is not None:
+        print("Loading weights...")
+        weights = torch.load(args.pretrained_model, map_location=torch.device('cpu'))
+        try:
+            model.load_state_dict(torch.load(args.pretrained_model))
+            print('Pretrained Loading success!')
+        except:
+            new_state_dict = {k.replace('module.', ''): v for k, v in weights.items()}
+            try:
+                model.load_state_dict(new_state_dict, strict=False)
+                print('loading success after replace module')
+            except Exception as inst:
+                print('pass loading weights')
+                print(inst)
+
     model.to(device).eval()
 
     # test model
@@ -120,8 +138,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', default=0)
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
-    parser.add_argument('--data_root', default="K:/dataset/dfc25/test_train")
-    parser.add_argument('--pretrained_model', default="pretrained/SAR_Pesudo_u-efficientnet-b4_s0_CELoss.pth")
+    parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
+    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_model_s0_CELoss.pth")
     parser.add_argument('--save_results', default="results")
     args = parser.parse_args()
 
