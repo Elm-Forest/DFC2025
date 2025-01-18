@@ -114,12 +114,23 @@ def main(args):
     metric = source.metrics.IoU2()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
+    if args.pretrained is not None:
+        model.load_state_dict(torch.load(args.pretrained))
+
     if torch.cuda.device_count() > 1:
         print("Number of GPUs :", torch.cuda.device_count())
         model = torch.nn.DataParallel(model)
         optimizer = torch.optim.Adam(
             [dict(params=model.module.parameters(), lr=args.learning_rate)]
         )
+
+    # if torch.cuda.device_count() > 1:
+    #     print("Parallel training!")
+    #     torch.cuda.set_device(os.getenv('LOCAL_RANK', -1))
+    #     device = torch.device("cuda", os.getenv('LOCAL_RANK', -1))
+    #     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_ids
+    # else:
+    #     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     print("Number of epochs   :", args.n_epochs)
     print("Number of classes  :", len(args.classes) + 1)
@@ -132,12 +143,14 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
-    parser.add_argument('--seed', type=int,  default=0)
-    parser.add_argument('--n_epochs', type=int,  default=1)
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--n_epochs', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=0)
-    parser.add_argument('--crop_size', type=int,  default=512)
-    parser.add_argument('--learning_rate', default=0.0001)
+    parser.add_argument('--gpu_ids', type=str, default='0')
+    parser.add_argument('--pretrained', type=str, default=None)
+    parser.add_argument('--crop_size', type=int, default=512)
+    parser.add_argument('--learning_rate', type=float, default=0.0001)
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
     parser.add_argument('--save_model', default="model")
