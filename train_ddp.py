@@ -8,7 +8,9 @@ from pathlib import Path
 import numpy as np
 import segmentation_models_pytorch as smp
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
 import source
 
@@ -36,13 +38,22 @@ def data_loader(args):
     validset = source.dataset.Dataset(val_pths, classes=args.classes, train=False)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     valid_loader = DataLoader(validset, batch_size=args.batch_size_val, shuffle=False, num_workers=args.num_workers)
+    train_sampler = None
+    if len(args.gpu_ids) > 1:
+        print("Parallel training!")
+        num_gpus = torch.cuda.device_count()
+        if num_gpus > 1:
+            print('use {} gpus!'.format(num_gpus))
+            train_sampler = DistributedSampler(trainset)
+            train_loader = DataLoader(trainset, sampler=train_sampler, batch_size=args.batch_size,
+                                      num_workers=args.num_workers, pin_memory=True, shuffle=False)
 
-    return train_loader, valid_loader
+    return train_loader, valid_loader, train_sampler
 
 
 def train_model(args, model, optimizer, criterion, metric, device):
     # get dataset loaders
-    train_data_loader, val_data_loader = data_loader(args)
+    train_data_loader, val_data_loader, train_sampler = data_loader(args)
 
     # create folder to save model
     os.makedirs(args.save_model, exist_ok=True)
@@ -53,7 +64,8 @@ def train_model(args, model, optimizer, criterion, metric, device):
     valid_hist = []
     for epoch in range(args.n_epochs):
         print(f"\nEpoch: {epoch + 1}")
-
+        if len(args.gpu_ids) > 1:
+            train_sampler.set_epoch(epoch)
         logs_train = source.runner.train_epoch(
             model=model,
             optimizer=optimizer,
@@ -109,11 +121,6 @@ def main(args):
             params += p.numel()
     print("Number of parameters: ", params)
 
-    classes_wt = np.ones([len(args.classes) + 1], dtype=np.float32)
-    criterion = source.losses.CEWithLogitsLoss(weights=classes_wt)
-    metric = source.metrics.IoU2()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-
     if args.pretrained is not None:
         print("Loading weights...")
         weights = torch.load(args.pretrained, map_location=torch.device('cpu'))
@@ -130,11 +137,21 @@ def main(args):
                 print(inst)
 
     if torch.cuda.device_count() > 1:
-        print("Number of GPUs :", torch.cuda.device_count())
-        model = torch.nn.DataParallel(model)
-        optimizer = torch.optim.Adam(
-            [dict(params=model.module.parameters(), lr=args.learning_rate)]
-        )
+        print("Parallel training!")
+        local_rank = os.getenv('LOCAL_RANK', -1)
+        torch.cuda.set_device(local_rank)
+        device = torch.device("cuda", local_rank)
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_ids
+        model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
+                                                    output_device=local_rank,
+                                                    find_unused_parameters=False)
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    classes_wt = np.ones([len(args.classes) + 1], dtype=np.float32)
+    criterion = source.losses.CEWithLogitsLoss(weights=classes_wt)
+    metric = source.metrics.IoU2()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
     print("Number of epochs   :", args.n_epochs)
     print("Number of classes  :", len(args.classes) + 1)
