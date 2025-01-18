@@ -35,7 +35,7 @@ def data_loader(args):
     trainset = source.dataset.Dataset(train_pths, classes=args.classes, size=args.crop_size, train=True)
     validset = source.dataset.Dataset(val_pths, classes=args.classes, train=False)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    valid_loader = DataLoader(validset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    valid_loader = DataLoader(validset, batch_size=args.batch_size_val, shuffle=False, num_workers=args.num_workers)
 
     return train_loader, valid_loader
 
@@ -158,6 +158,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--n_epochs', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--batch_size_val', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=0)
     parser.add_argument('--gpu_ids', type=str, default='0')
     parser.add_argument('--pretrained', type=str, default=None)
