@@ -118,7 +118,7 @@ def main(args):
         print("Loading weights...")
         weights = torch.load(args.pretrained, map_location=torch.device('cpu'))
         try:
-            model.load_state_dict(torch.load(args.pretrained), strict=False)
+            model.load_state_dict(torch.load(args.pretrained))
             print('Pretrained Loading success!')
         except:
             new_state_dict = {k.replace('module.', ''): v for k, v in weights.items()}
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     parser.add_argument('--gpu_ids', type=str, default='0')
     parser.add_argument('--pretrained', type=str, default=None)
     parser.add_argument('--crop_size', type=int, default=512)
-    parser.add_argument('--learning_rate', type=float, default=0.0001)
+    parser.add_argument('--learning_rate', type=float, default=1e-4)
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
     parser.add_argument('--save_model', default="model")
