@@ -46,7 +46,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
 
     # create folder to save model
     os.makedirs(args.save_model, exist_ok=True)
-    model_name = f"SAR_Pesudo_{model.name}_s{args.seed}_{criterion.name}"
+    model_name = f"SAR_Pesudo_{args.save_model}_s{args.seed}_{criterion.name}"
 
     max_score = 0
     train_hist = []
