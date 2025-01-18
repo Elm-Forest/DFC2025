@@ -115,7 +115,19 @@ def main(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
     if args.pretrained is not None:
-        model.load_state_dict(torch.load(args.pretrained))
+        print("Loading weights...")
+        weights = torch.load(args.pretrained, map_location=torch.device('cpu'))
+        try:
+            model.load_state_dict(torch.load(args.pretrained), strict=False)
+            print('Pretrained Loading success!')
+        except:
+            new_state_dict = {k.replace('module.', ''): v for k, v in weights.items()}
+            try:
+                model.load_state_dict(new_state_dict, strict=False)
+                print('loading success after replace module')
+            except Exception as inst:
+                print('pass loading weights')
+                print(inst)
 
     if torch.cuda.device_count() > 1:
         print("Number of GPUs :", torch.cuda.device_count())
