@@ -63,7 +63,7 @@ def train_epoch(
             loss_meter_dice.update(loss_dice.cpu().detach().numpy(), n=n)
             score_meter.update(metric(outputs, y).cpu().detach().numpy(), n=n)
 
-            logs.update({'loss': loss_meter.avg})
+            # logs.update({'loss': loss_meter.avg})
             logs.update({'ce': loss_meter_ce.avg})
             logs.update({'dice': loss_meter_dice.avg})
             logs.update({metric.name: score_meter.avg})
