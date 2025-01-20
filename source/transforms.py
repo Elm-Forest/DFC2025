@@ -34,32 +34,45 @@ def test_augm(sample):
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
 
 
+import albumentations as A
+
+
 def train_augm(sample, size=512):
     augms = [
+        # 旋转、平移、缩放
         A.ShiftScaleRotate(
             scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.7
         ),
+        # 随机裁剪
         A.RandomCrop(size, size, p=1.0),
+        # 水平翻转
         A.HorizontalFlip(p=0.5),
+        # 垂直翻转
         A.VerticalFlip(p=0.5),
-        A.Downscale((0.5, 0.75), p=0.05),
+        # 下采样
+        A.Downscale(scale=(0.5, 0.75), p=0.05),
+        # 遮挡丢失
         A.MaskDropout(max_objects=3, fill=0, fill_mask=0, p=0.1),
-        # color transforms
-        A.OneOf(
-            [
-                A.RandomBrightnessContrast(
-                    brightness_limit=0.3, contrast_limit=0.3, p=1
-                ),
-                A.RandomGamma(gamma_limit=(70, 130), p=1),
-                A.ChannelShuffle(p=0.2),
-                A.HueSaturationValue(
-                    hue_shift_limit=30, sat_shift_limit=40, val_shift_limit=30, p=1
-                ),
-                A.RGBShift(r_shift_limit=30, g_shift_limit=30, b_shift_limit=30, p=1),
-            ],
-            p=0.8,
-        ),
-        # distortion
+
+        # 删除颜色相关的增强，因为它们只适用于RGB图像
+        # A.OneOf(
+        #     [
+        #         A.RandomBrightnessContrast(
+        #             brightness_limit=0.3, contrast_limit=0.3, p=1
+        #         ),
+        #         A.RandomGamma(gamma_limit=(70, 130), p=1),
+        #         A.ChannelShuffle(p=0.2),
+        #         A.HueSaturationValue(
+        #             hue_shift_limit=30, sat_shift_limit=40, val_shift_limit=30, p=1
+        #         ),
+        #         A.RGBShift(r_shift_limit=30, g_shift_limit=30, b_shift_limit=30, p=1),
+        #     ],
+        #     p=0.8,
+        # ),
+
+        # 去除不适合灰度图的颜色相关变换
+
+        # 保留变形和噪声相关增强
         A.OneOf(
             [
                 A.ElasticTransform(p=1),
@@ -69,7 +82,7 @@ def train_augm(sample, size=512):
             ],
             p=0.2,
         ),
-        # noise transforms
+        # 噪声增强
         A.OneOf(
             [
                 A.GaussNoise(p=1),
@@ -80,6 +93,7 @@ def train_augm(sample, size=512):
             p=0.2,
         ),
     ]
+
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
 
 

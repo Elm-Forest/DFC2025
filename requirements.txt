@@ -1,3 +1,4 @@
 rasterio
 ttach
+albumentations>=2.0.0
 segmentation-models-pytorch
