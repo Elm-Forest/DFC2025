@@ -60,7 +60,6 @@ def test_model(args, model, device):
     os.makedirs(args.save_results, exist_ok=True)
     # load test data
     test_fns = [f for f in Path(args.data_root).rglob("*.tif") if "sar_images" in str(f)]
-    print(test_fns)
     for fn_img in test_fns:
         img = source.dataset.load_grayscale(fn_img)
         h, w = img.shape[:2]

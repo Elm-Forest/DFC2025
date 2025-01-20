@@ -1,2 +1,3 @@
 rasterio
+ttach
 segmentation-models-pytorch
