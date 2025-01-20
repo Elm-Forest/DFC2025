@@ -10,6 +10,7 @@ import numpy as np
 import segmentation_models_pytorch as smp
 import torch
 import torchvision.transforms.functional as TF
+import ttach as tta
 from PIL import Image
 
 import source
@@ -126,7 +127,16 @@ def main(args):
             except Exception as inst:
                 print('pass loading weights')
                 print(inst)
-
+    transforms = tta.Compose(
+        [
+            # tta.HorizontalFlip(),
+            # tta.VerticalFlip(),
+            tta.Rotate90(angles=[0, 90, 180, 270]),
+            # tta.Scale(scales=[1, 2]),
+            # tta.Multiply(factors=[0.9, 1, 1.1]),
+        ]
+    )
+    model = tta.SegmentationTTAWrapper(model, transforms, merge_mode='mean')
     model.to(device).eval()
 
     # test model
@@ -137,7 +147,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', default=0)
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
-    parser.add_argument('--data_root', default="K:/dataset/dfc25/test_train")
+    parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
     parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_model_s0_CELoss.pth")
     parser.add_argument('--save_results', default="results")
     args = parser.parse_args()

@@ -1,4 +1,5 @@
 import warnings
+
 import albumentations as A
 import numpy as np
 import torchvision.transforms.functional as TF
@@ -22,23 +23,27 @@ class ToTensor:
             sample[key] = TF.to_tensor(sample[key].astype(np.float32) / 255.0)
         return sample
 
+
 def valid_augm(sample, size=512):
     augms = [A.Resize(height=size, width=size, p=1.0)]
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
+
 
 def test_augm(sample):
     augms = [A.Flip(p=0.1)]
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
 
+
 def train_augm(sample, size=512):
     augms = [
         A.ShiftScaleRotate(
-            scale_limit=0.2, rotate_limit=45, border_mode=0, value=0, p=0.7
+            scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.7
         ),
         A.RandomCrop(size, size, p=1.0),
-        A.Flip(p=0.75),
-        A.Downscale(scale_min=0.5, scale_max=0.75, p=0.05),
-        A.MaskDropout(max_objects=3, image_fill_value=0, mask_fill_value=0, p=0.1),
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
+        A.Downscale((0.5, 0.75), p=0.05),
+        A.MaskDropout(max_objects=3, fill=0, fill_mask=0, p=0.1),
         # color transforms
         A.OneOf(
             [
@@ -60,7 +65,7 @@ def train_augm(sample, size=512):
                 A.ElasticTransform(p=1),
                 A.OpticalDistortion(p=1),
                 A.GridDistortion(p=1),
-                A.IAAPerspective(p=1),
+                A.Perspective(p=1),
             ],
             p=0.2,
         ),
@@ -69,13 +74,14 @@ def train_augm(sample, size=512):
             [
                 A.GaussNoise(p=1),
                 A.MultiplicativeNoise(p=1),
-                A.IAASharpen(p=1),
+                A.Sharpen(p=1),
                 A.GaussianBlur(p=1),
             ],
             p=0.2,
         ),
     ]
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
+
 
 def train_augm3(sample, size=512):
     augms = [
@@ -84,9 +90,11 @@ def train_augm3(sample, size=512):
     ]
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
 
+
 def valid_augm2(sample, size=512):
     augms = [A.Resize(height=size, width=size, p=1.0)]
-    return A.Compose(augms,additional_targets={'osm': 'image'})(image=sample["image"], mask=sample["mask"], osm=sample["osm"])
+    return A.Compose(augms, additional_targets={'osm': 'image'})(image=sample["image"], mask=sample["mask"],
+                                                                 osm=sample["osm"])
 
 
 def train_augm2(sample, size=512):
@@ -119,4 +127,5 @@ def train_augm2(sample, size=512):
             p=0.2,
         ),
     ]
-    return A.Compose(augms,additional_targets={'osm': 'image'})(image=sample["image"], mask=sample["mask"], osm=sample["osm"])
+    return A.Compose(augms, additional_targets={'osm': 'image'})(image=sample["image"], mask=sample["mask"],
+                                                                 osm=sample["osm"])

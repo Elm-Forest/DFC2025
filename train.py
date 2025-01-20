@@ -93,16 +93,22 @@ def main(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # using UNet with EfficientNet-B4 backbone
-    model = smp.Unet(
+    # model = smp.Unet(
+    #     classes=len(args.classes) + 1,
+    #     in_channels=1,
+    #     activation=None,
+    #     encoder_weights="imagenet",
+    #     encoder_name="efficientnet-b4",
+    #     decoder_attention_type="scse",
+    # )
+
+    model = smp.Segformer(
         classes=len(args.classes) + 1,
         in_channels=1,
         activation=None,
         encoder_weights="imagenet",
         encoder_name="efficientnet-b4",
-        decoder_attention_type="scse",
     )
-
-    # model = smp.Segformer
 
     # count parameters
     params = 0
