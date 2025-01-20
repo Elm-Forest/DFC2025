@@ -7,13 +7,13 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import segmentation_models_pytorch as smp
 import torch
 import torchvision.transforms.functional as TF
 import ttach as tta
 from PIL import Image
 
 import source
+from source.model import creatModel
 
 warnings.filterwarnings("ignore")
 
@@ -97,14 +97,15 @@ def main(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     n_classes = len(args.classes) + 1
-    model = smp.Unet(
-        classes=n_classes,
-        in_channels=1,
-        activation=None,
-        encoder_weights="imagenet",
-        encoder_name="efficientnet-b4",
-        decoder_attention_type="scse",
-    )
+    # model = smp.Unet(
+    #     classes=n_classes,
+    #     in_channels=1,
+    #     activation=None,
+    #     encoder_weights="imagenet",
+    #     encoder_name="efficientnet-b4",
+    #     decoder_attention_type="scse",
+    # )
+    model = creatModel(args)
 
     if args.pretrained_model is not None:
         print("Loading weights...")
@@ -142,7 +143,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', default=0)
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/test_train")
-    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_model_s0_CELoss.pth")
+    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_segformer_s0_CELoss.pth")
     parser.add_argument('--save_results', default="results")
     args = parser.parse_args()
 

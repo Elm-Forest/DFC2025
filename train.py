@@ -6,11 +6,12 @@ import warnings
 from pathlib import Path
 
 import numpy as np
-import segmentation_models_pytorch as smp
 import torch
 from torch.utils.data import DataLoader
 
 import source
+from source.losses import DiceLoss
+from source.model import creatModel
 
 warnings.filterwarnings("ignore")
 
@@ -47,7 +48,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
     # create folder to save model
     os.makedirs(args.save_model, exist_ok=True)
     model_name = f"SAR_Pesudo_{args.save_model}_s{args.seed}_{criterion.name}"
-
+    dice_loss = DiceLoss().to(device)
     max_score = 0
     train_hist = []
     valid_hist = []
@@ -61,6 +62,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
             metric=metric,
             dataloader=train_data_loader,
             device=device,
+            dice_loss=dice_loss
         )
 
         logs_valid = source.runner.valid_epoch(
@@ -102,13 +104,7 @@ def main(args):
     #     decoder_attention_type="scse",
     # )
 
-    model = smp.Segformer(
-        classes=len(args.classes) + 1,
-        in_channels=1,
-        activation=None,
-        encoder_weights="imagenet",
-        encoder_name="efficientnet-b4",
-    )
+    model = creatModel(args)
 
     # count parameters
     params = 0

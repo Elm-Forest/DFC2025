@@ -7,13 +7,13 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import segmentation_models_pytorch as smp
 import torch
 import torchvision.transforms.functional as TF
 import ttach as tta
 from PIL import Image
 
 import source
+from source.model import creatModel
 
 warnings.filterwarnings("ignore")
 
@@ -87,7 +87,7 @@ def test_model(args, model, device):
         # save image as png
         filename = os.path.splitext(os.path.basename(fn_img))[0]
         res = y_pr
-        # res = label2rgb(y_pr)
+        res = label2rgb(y_pr)
         Image.fromarray(res).save(os.path.join(args.save_results, filename + '.png'))
         print('Processed file:', filename + '.png')
     print("Done!")
@@ -103,15 +103,8 @@ def main(args):
     torch.backends.cudnn.benchmark = False
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    n_classes = len(args.classes) + 1
-    model = smp.Unet(
-        classes=n_classes,
-        in_channels=1,
-        activation=None,
-        encoder_weights="imagenet",
-        encoder_name="efficientnet-b4",
-        decoder_attention_type="scse",
-    )
+    # n_classes = len(args.classes) + 1
+    model = creatModel(args)
 
     if args.pretrained_model is not None:
         print("Loading weights...")
@@ -122,7 +115,7 @@ def main(args):
         except:
             new_state_dict = {k.replace('module.', ''): v for k, v in weights.items()}
             try:
-                model.load_state_dict(new_state_dict, strict=False)
+                model.load_state_dict(new_state_dict, strict=True)
                 print('loading success after replace module')
             except Exception as inst:
                 print('pass loading weights')
@@ -147,8 +140,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', default=0)
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
-    parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
-    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_model_s0_CELoss.pth")
+    parser.add_argument('--data_root', default="K:/dataset/dfc25/test_train")
+    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_segformer_s0_CELoss.pth")
     parser.add_argument('--save_results', default="results")
     args = parser.parse_args()
 
