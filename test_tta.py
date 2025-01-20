@@ -10,6 +10,7 @@ import numpy as np
 import segmentation_models_pytorch as smp
 import torch
 import torchvision.transforms.functional as TF
+import ttach as tta
 from PIL import Image
 
 import source
@@ -67,27 +68,20 @@ def test_model(args, model, device):
         shape = (2 ** power, 2 ** power)
         img = cv2.resize(img, shape)
 
-        # test time augmentation
-        imgs = []
-        imgs.append(img.copy())
-        imgs.append(img[:, ::-1].copy())
-        imgs.append(img[::-1, :].copy())
-        imgs.append(img[::-1, ::-1].copy())
-
-        input_ = torch.cat([TF.to_tensor(x).unsqueeze(0) for x in imgs], dim=0).float().to(device)
-        pred = []
+        # 常规推理，不使用 TTA
+        input_ = torch.tensor(TF.to_tensor(img).unsqueeze(0), dtype=torch.float32).to(device)
         with torch.no_grad():
             msk = model(input_)
             msk = torch.softmax(msk[:, :, ...], dim=1)
             msk = msk.cpu().numpy()
-            pred = (msk[0, :, :, :] + msk[1, :, :, ::-1] + msk[2, :, ::-1, :] + msk[3, :, ::-1, ::-1]) / 4
-        pred = pred.argmax(axis=0).astype("uint8")
 
-        y_pr = cv2.resize(pred, (w, h), interpolation=cv2.INTER_NEAREST)
+        pred = msk.argmax(axis=1).astype("uint8")  # 获取最大概率类别的索引
+        y_pr = cv2.resize(pred[0], (w, h), interpolation=cv2.INTER_NEAREST)
+
         # save image as png
         filename = os.path.splitext(os.path.basename(fn_img))[0]
         res = y_pr
-        # res = label2rgb(y_pr)
+        res = label2rgb(y_pr)
         Image.fromarray(res).save(os.path.join(args.save_results, filename + '.png'))
         print('Processed file:', filename + '.png')
     print("Done!")
@@ -128,6 +122,16 @@ def main(args):
                 print('pass loading weights')
                 print(inst)
 
+    transforms = tta.Compose(
+        [
+            tta.HorizontalFlip(),
+            tta.VerticalFlip(),
+            tta.Rotate90(angles=[0, 90, 180, 270]),
+            tta.Scale(scales=[1, 2]),
+            # tta.Multiply(factors=[0.9, 1, 1.1]),
+        ]
+    )
+    model = tta.SegmentationTTAWrapper(model, transforms, merge_mode='mean')
     model.to(device).eval()
 
     # test model

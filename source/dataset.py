@@ -14,24 +14,27 @@ def load_grayscale(path):
     src = rasterio.open(path, "r")
     return (src.read(1)).astype(np.uint8)
 
+
 def get_crs(path):
     src = rasterio.open(path, "r")
     return src.crs, src.transform
 
-def save_img(path,img,crs,transform):
+
+def save_img(path, img, crs, transform):
     with rasterio.open(
-        path,
-        'w',
-        driver='GTiff',
-        height=img.shape[1],
-        width=img.shape[2],
-        count=img.shape[0],
-        dtype=img.dtype,
-        crs=crs,
-        transform=transform,
+            path,
+            'w',
+            driver='GTiff',
+            height=img.shape[1],
+            width=img.shape[2],
+            count=img.shape[0],
+            dtype=img.dtype,
+            crs=crs,
+            transform=transform,
     ) as dst:
         dst.write(img)
         dst.close()
+
 
 class Dataset(BaseDataset):
     def __init__(self, label_list, classes=None, size=128, train=False):
@@ -58,4 +61,3 @@ class Dataset(BaseDataset):
 
     def __len__(self):
         return len(self.fns)
-

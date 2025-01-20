@@ -102,6 +102,8 @@ def main(args):
         decoder_attention_type="scse",
     )
 
+    # model = smp.Segformer
+
     # count parameters
     params = 0
     for p in model.parameters():
