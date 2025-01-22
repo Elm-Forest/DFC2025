@@ -35,11 +35,13 @@ def train_epoch(
         device="cpu",
         loss_meter=None,
         score_meter=None,
-        dice_loss=None
+        dice_loss=None,
+        lovasz_loss=None,
+        focal_loss=None,
 ):
     loss_meter = AverageMeter()
     loss_meter_ce = AverageMeter()
-    loss_meter_dice = AverageMeter()
+    loss_meter_lovasz = AverageMeter()
     score_meter = AverageMeter()
     logs = {}
 
@@ -53,19 +55,21 @@ def train_epoch(
             optimizer.zero_grad()
             outputs = model.forward(x)
             loss_ce = criterion(outputs, y)
-            loss_dice = dice_loss(outputs, y)
-            loss = 0.7*loss_ce + loss_dice
+            loss_focal = focal_loss(outputs, y)
+            loss_lovasz = lovasz_loss(outputs, y)
+            loss = 0.35 * loss_ce + 0.5 * loss_lovasz + 0.15 * loss_focal
             loss.backward()
             optimizer.step()
 
             loss_meter.update(loss.cpu().detach().numpy(), n=n)
-            loss_meter_ce.update(loss_ce.cpu().detach().numpy(), n=n)
-            loss_meter_dice.update(loss_dice.cpu().detach().numpy(), n=n)
+            loss_meter_ce.update((loss_ce + loss_focal).cpu().detach().numpy(), n=n)
+            loss_meter_lovasz.update(loss_focal.cpu().detach().numpy(), n=n)
             score_meter.update(metric(outputs, y).cpu().detach().numpy(), n=n)
-
+            print()
+            print('focal loss:', loss_focal.cpu().detach().numpy(), 'lovasz loss:', loss_lovasz.cpu().detach().numpy())
             # logs.update({'loss': loss_meter.avg})
             logs.update({'ce': loss_meter_ce.avg})
-            logs.update({'dice': loss_meter_dice.avg})
+            logs.update({'lovasz': loss_meter_lovasz.avg})
             logs.update({metric.name: score_meter.avg})
             iterator.set_postfix_str(format_logs(logs))
     return logs

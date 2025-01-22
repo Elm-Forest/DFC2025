@@ -10,7 +10,8 @@ import torch
 from torch.utils.data import DataLoader
 
 import source
-from source.losses import DiceLoss
+from source.focal_loss import FocalLoss
+from source.lovasz_losses import LovaszSigmoid
 from source.model import creatModel
 
 warnings.filterwarnings("ignore")
@@ -48,7 +49,9 @@ def train_model(args, model, optimizer, criterion, metric, device):
     # create folder to save model
     os.makedirs(args.save_model, exist_ok=True)
     model_name = f"SAR_Pesudo_{args.save_model}_s{args.seed}_{criterion.name}"
-    dice_loss = DiceLoss().to(device)
+    # dice_loss = DiceLoss().to(device)
+    focal_loss = FocalLoss(alpha=0.25, gamma=2.0, reduction='mean').to(device)
+    lovasz_loss = LovaszSigmoid().to(device)
     max_score = 0
     train_hist = []
     valid_hist = []
@@ -62,7 +65,9 @@ def train_model(args, model, optimizer, criterion, metric, device):
             metric=metric,
             dataloader=train_data_loader,
             device=device,
-            dice_loss=dice_loss
+            dice_loss=None,
+            lovasz_loss=lovasz_loss,
+            focal_loss=focal_loss,
         )
 
         logs_valid = source.runner.valid_epoch(
