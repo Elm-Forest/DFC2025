@@ -1,4 +1,5 @@
 rasterio
 ttach
+timm
 albumentations>=2.0.0
 segmentation-models-pytorch
