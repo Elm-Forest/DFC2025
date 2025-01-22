@@ -7,11 +7,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from segmentation_models_pytorch.losses import LovaszLoss
+from timm.scheduler.cosine_lr import CosineLRScheduler
 from torch.utils.data import DataLoader
 
 import source
 from source.focal_loss import FocalLoss
-from source.lovasz_losses import LovaszSigmoid
 from source.model import creatModel
 
 warnings.filterwarnings("ignore")
@@ -46,18 +47,25 @@ def train_model(args, model, optimizer, criterion, metric, device):
     # get dataset loaders
     train_data_loader, val_data_loader = data_loader(args)
 
+    # initialize learning rate scheduler
+    # scheduler = CosineAnnealingLR(optimizer, T_max=args.n_epochs, eta_min=0)
+    scheduler = CosineLRScheduler(optimizer=optimizer,
+                                  t_initial=args.n_epochs,
+                                  lr_min=5e-6,
+                                  warmup_t=0,
+                                  warmup_lr_init=5e-5)
     # create folder to save model
     os.makedirs(args.save_model, exist_ok=True)
     model_name = f"SAR_Pesudo_{args.save_model}_s{args.seed}_{criterion.name}"
     # dice_loss = DiceLoss().to(device)
     focal_loss = FocalLoss(alpha=0.25, gamma=2.0, reduction='mean').to(device)
-    lovasz_loss = LovaszSigmoid().to(device)
+    lovasz_loss = LovaszLoss(mode='binary').to(device)
     max_score = 0
     train_hist = []
     valid_hist = []
     for epoch in range(args.n_epochs):
         print(f"\nEpoch: {epoch + 1}")
-
+        print(f"Learning rate: {optimizer.param_groups[0]['lr']}\n")
         logs_train = source.runner.train_epoch(
             model=model,
             optimizer=optimizer,
@@ -87,6 +95,9 @@ def train_model(args, model, optimizer, criterion, metric, device):
             torch.save(model.state_dict(), os.path.join(args.save_model, f"{model_name}.pth"))
             print("Model saved in the folder : ", args.save_model)
             print("Model name is : ", model_name)
+
+        # Step the scheduler at the end of each epoch
+        scheduler.step(epoch)
 
 
 def main(args):
@@ -157,7 +168,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--n_epochs', type=int, default=1)
+    parser.add_argument('--n_epochs', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--batch_size_val', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=0)
