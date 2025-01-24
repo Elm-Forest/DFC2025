@@ -19,7 +19,7 @@ class Net(nn.Module):
         model_dict = {}
         load_key, no_load_key = [], []
         pretrain_dict = torch.load(pretrained_weight, map_location=f"cuda:0")
-        # pretrain_dict = {k.replace('module.', ''): v for k, v in pretrain_dict.items()}
+        pretrain_dict = {k.replace('module.', ''): v for k, v in pretrain_dict.items()}
         pretrain_dict_items = pretrain_dict.items() if "state_dict" not in pretrain_dict else pretrain_dict[
             "state_dict"].items()
         for k, v in pretrain_dict_items:
