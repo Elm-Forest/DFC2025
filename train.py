@@ -172,6 +172,7 @@ if __name__ == "__main__":
     parser.add_argument('--warmup_epochs', type=int, default=3)
     parser.add_argument('--warmup_lr', type=float, default=5e-5)
     parser.add_argument('--model_name', default="sam2")
+    parser.add_argument('--encoder_name', default="mit_b4")
     parser.add_argument('--model_size', default="b4")
     parser.add_argument('--batch_size', type=int, default=3)
     parser.add_argument('--batch_size_val', type=int, default=4)

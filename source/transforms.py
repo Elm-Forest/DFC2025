@@ -1,6 +1,5 @@
 import warnings
 
-import albumentations as A
 import numpy as np
 import torchvision.transforms.functional as TF
 
@@ -43,50 +42,55 @@ def train_augm(sample, size=512):
         A.RandomCrop(size, size, p=1.0),
         # 旋转、平移、缩放
         A.ShiftScaleRotate(
-            scale_limit=0.2, rotate_limit=90, border_mode=0, p=0.7  # 增加rotate_limit范围
+            scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.7
         ),
         # 水平翻转
         A.HorizontalFlip(p=0.5),
         # 垂直翻转
         A.VerticalFlip(p=0.5),
-        # 随机缩放
-        # A.RandomScale(scale_limit=(-0.1, 0.1), p=0.2),
+        # 下采样
+        A.Downscale(scale_range=(0.5, 0.75), p=0.05),
+        # 遮挡丢失
+        A.MaskDropout(max_objects=3, fill=0, fill_mask=0, p=0.1),
+        A.RandomScale(scale_limit=(-0.1, 0.1), p=0.2),
+        # 删除颜色相关的增强，因为它们只适用于RGB图像
+        # A.OneOf(
+        #     [
+        #         A.RandomBrightnessContrast(
+        #             brightness_limit=0.3, contrast_limit=0.3, p=1
+        #         ),
+        #         A.RandomGamma(gamma_limit=(70, 130), p=1),
+        #         A.ChannelShuffle(p=0.2),
+        #         A.HueSaturationValue(
+        #             hue_shift_limit=30, sat_shift_limit=40, val_shift_limit=30, p=1
+        #         ),
+        #         A.RGBShift(r_shift_limit=30, g_shift_limit=30, b_shift_limit=30, p=1),
+        #     ],
+        #     p=0.8,
+        # ),
+
         # 去除不适合灰度图的颜色相关变换
+
         # 保留变形和噪声相关增强
         A.OneOf(
             [
-                A.ElasticTransform(p=0.1),  # 减少ElasticTransform的概率
-                A.OpticalDistortion(p=0.1),  # 减少OpticalDistortion的概率
-                A.GridDistortion(p=0.1),  # 减少GridDistortion的概率
-                A.Perspective(p=0.1),  # 减少Perspective的概率
+                A.ElasticTransform(p=1),
+                A.OpticalDistortion(p=1),
+                A.GridDistortion(p=1),
+                A.Perspective(p=1),
             ],
-            p=0.1,  # 减少大变形的出现概率
+            p=0.2,
         ),
         # 噪声增强
         A.OneOf(
             [
-                A.GaussNoise(p=0.2),
-                A.MultiplicativeNoise(p=0.2),
-                A.Sharpen(p=0.2),
-                A.GaussianBlur(p=0.2),
+                A.GaussNoise(p=1),
+                A.MultiplicativeNoise(p=1),
+                A.Sharpen(p=1),
+                A.GaussianBlur(p=1),
             ],
             p=0.2,
         ),
-        # 使用新的CoarseDropout（遮挡丢失）
-        A.CoarseDropout(
-            num_holes_range=(1, 3),  # 随机丢弃区域的数量范围
-            hole_height_range=(0.05, 0.1),  # 丢弃区域高度范围（作为图像高度的比例）
-            hole_width_range=(0.05, 0.1),  # 丢弃区域宽度范围（作为图像宽度的比例）
-            fill="random_uniform",  # 随机填充
-            fill_mask=None,  # 对应mask不做填充
-            p=0.1,  # 触发概率
-        ),
-        # 增强亮度、对比度或Gamma
-        A.RandomBrightnessContrast(
-            brightness_limit=0.3, contrast_limit=0.3, p=0.3  # 加强对比度和亮度变化
-        ),
-        # 添加Gamma变换
-        A.RandomGamma(gamma_limit=(70, 130), p=0.3),
     ]
 
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
