@@ -26,7 +26,7 @@ def creatModel(args,
             encoder_name='tu-sam2_hiera_large',
         )
     elif args.model_name == 'mit_unet':
-        model = Net(phi='b1', pretrained=args.pretrained)
+        model = Net(phi=args.model_size, pretrained=args.pretrained)
     else:
         model = smp.Segformer(
             classes=len(args.classes) + 1,

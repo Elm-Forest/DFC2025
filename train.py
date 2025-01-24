@@ -13,7 +13,6 @@ from torch.utils.data import DataLoader
 
 import source
 from source.focal_loss import FocalLoss
-from source.mit_unet.network_mit_unet import Net
 from source.model import creatModel
 
 warnings.filterwarnings("ignore")
@@ -53,8 +52,8 @@ def train_model(args, model, optimizer, criterion, metric, device):
     scheduler = CosineLRScheduler(optimizer=optimizer,
                                   t_initial=args.n_epochs,
                                   lr_min=5e-6,
-                                  warmup_t=0,
-                                  warmup_lr_init=5e-5)
+                                  warmup_t=args.warmup_epochs,
+                                  warmup_lr_init=args.warmup_lr)
     # create folder to save model
     os.makedirs(args.save_model, exist_ok=True)
     model_name = f"SAR_Pesudo_{args.save_model}_s{args.seed}_{criterion.name}"
@@ -170,7 +169,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--n_epochs', type=int, default=10)
+    parser.add_argument('--warmup_epochs', type=int, default=3)
+    parser.add_argument('--warmup_lr', type=float, default=5e-5)
     parser.add_argument('--model_name', default="sam2")
+    parser.add_argument('--model_size', default="b4")
     parser.add_argument('--batch_size', type=int, default=3)
     parser.add_argument('--batch_size_val', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=0)
