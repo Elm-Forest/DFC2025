@@ -125,7 +125,7 @@ def main(args):
             # tta.HorizontalFlip(),
             # tta.VerticalFlip(),
             tta.Rotate90(angles=[0, 90, 180, 270]),
-            # tta.Scale(scales=[1, 2]),
+            tta.Scale(scales=[0.8, 1, 1.2]),
             # tta.Multiply(factors=[0.9, 1, 1.1]),
         ]
     )

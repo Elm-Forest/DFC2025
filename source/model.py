@@ -1,8 +1,8 @@
 import argparse
-import os
 
 import segmentation_models_pytorch as smp
-import torch
+
+from source.mit_unet.network_mit_unet import Net
 
 
 def creatModel(args,
@@ -25,7 +25,8 @@ def creatModel(args,
             encoder_weights=encoder_weights,
             encoder_name='tu-sam2_hiera_large',
         )
-
+    elif args.model_name == 'mit_unet':
+        model = Net(phi='b1', pretrained=args.pretrained)
     else:
         model = smp.Segformer(
             classes=len(args.classes) + 1,
@@ -34,6 +35,7 @@ def creatModel(args,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
         )
+
     return model
 
 
