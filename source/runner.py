@@ -68,9 +68,10 @@ def train_epoch(
             # print()
             # print('focal loss:', loss_focal.cpu().detach().numpy(), 'lovasz loss:', loss_lovasz.cpu().detach().numpy())
             # logs.update({'loss': loss_meter.avg})
+            logs.update({metric.name: score_meter.avg})
             logs.update({'ce': loss_meter_ce.avg})
             logs.update({'lovasz': loss_meter_lovasz.avg})
-            logs.update({metric.name: score_meter.avg})
+
             iterator.set_postfix_str(format_logs(logs))
     return logs
 
