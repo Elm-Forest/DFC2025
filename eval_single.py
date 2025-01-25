@@ -7,13 +7,13 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import segmentation_models_pytorch as smp
 import torch
 import torchvision.transforms.functional as TF
 import ttach as tta
 from PIL import Image
 
 import source
-from source.model import creatModel
 
 warnings.filterwarnings("ignore")
 
@@ -60,6 +60,7 @@ def test_model(args, model, device):
     os.makedirs(args.save_results, exist_ok=True)
     # load test data
     test_fns = [f for f in Path(args.data_root).rglob("*.tif") if "sar_images" in str(f)]
+    print(test_fns)
     for fn_img in test_fns:
         img = source.dataset.load_grayscale(fn_img)
         h, w = img.shape[:2]
@@ -67,27 +68,20 @@ def test_model(args, model, device):
         shape = (2 ** power, 2 ** power)
         img = cv2.resize(img, shape)
 
-        # test time augmentation
-        imgs = []
-        imgs.append(img.copy())
-        imgs.append(img[:, ::-1].copy())
-        imgs.append(img[::-1, :].copy())
-        imgs.append(img[::-1, ::-1].copy())
-
-        input_ = torch.cat([TF.to_tensor(x).unsqueeze(0) for x in imgs], dim=0).float().to(device)
-        pred = []
+        # 常规推理，不使用 TTA
+        input_ = torch.tensor(TF.to_tensor(img).unsqueeze(0), dtype=torch.float32).to(device)
         with torch.no_grad():
             msk = model(input_)
             msk = torch.softmax(msk[:, :, ...], dim=1)
             msk = msk.cpu().numpy()
-            pred = (msk[0, :, :, :] + msk[1, :, :, ::-1] + msk[2, :, ::-1, :] + msk[3, :, ::-1, ::-1]) / 4
-        pred = pred.argmax(axis=0).astype("uint8")
 
-        y_pr = cv2.resize(pred, (w, h), interpolation=cv2.INTER_NEAREST)
+        pred = msk.argmax(axis=1).astype("uint8")  # 获取最大概率类别的索引
+        y_pr = cv2.resize(pred[0], (w, h), interpolation=cv2.INTER_NEAREST)
+
         # save image as png
         filename = os.path.splitext(os.path.basename(fn_img))[0]
         res = y_pr
-        # res = label2rgb(y_pr)
+        res = label2rgb(y_pr)
         Image.fromarray(res).save(os.path.join(args.save_results, filename + '.png'))
         print('Processed file:', filename + '.png')
     print("Done!")
@@ -103,8 +97,15 @@ def main(args):
     torch.backends.cudnn.benchmark = False
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # n_classes = len(args.classes) + 1
-    model = creatModel(args)
+    n_classes = len(args.classes) + 1
+    model = smp.Unet(
+        classes=n_classes,
+        in_channels=1,
+        activation=None,
+        encoder_weights="imagenet",
+        encoder_name="efficientnet-b4",
+        decoder_attention_type="scse",
+    )
 
     if args.pretrained_model is not None:
         print("Loading weights...")
@@ -115,17 +116,17 @@ def main(args):
         except:
             new_state_dict = {k.replace('module.', ''): v for k, v in weights.items()}
             try:
-                model.load_state_dict(new_state_dict, strict=True)
+                model.load_state_dict(new_state_dict, strict=False)
                 print('loading success after replace module')
             except Exception as inst:
                 print('pass loading weights')
                 print(inst)
+
     transforms = tta.Compose(
         [
             # tta.HorizontalFlip(),
-            # tta.VerticalFlip(),
             tta.Rotate90(angles=[0, 90, 180, 270]),
-            # tta.Scale(scales=[0.8, 1, 1.2]),
+            tta.Scale(scales=[1, 2, 3]),
             # tta.Multiply(factors=[0.9, 1, 1.1]),
         ]
     )
@@ -139,11 +140,9 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', default=0)
-    parser.add_argument('--model_name', default="deeplab")
-    parser.add_argument('--encoder_name', default="mit_b5")
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
-    parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
-    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_deeplabv3plus_mitb5_s0_CELoss.pth")
+    parser.add_argument('--data_root', default="K:/dataset/dfc25/test_train")
+    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_model_s0_CELoss.pth")
     parser.add_argument('--save_results', default="results")
     args = parser.parse_args()
 

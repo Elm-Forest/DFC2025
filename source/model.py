@@ -23,7 +23,7 @@ def creatModel(args,
         )
     elif args.model_name == 'mit_unet':
         model = Net(phi=args.model_size, pretrained=args.pretrained)
-    elif args.model_name == 'mit':
+    elif args.model_name == 'segformer':
         model = smp.Segformer(
             classes=len(args.classes) + 1,
             in_channels=in_channels,
@@ -36,6 +36,23 @@ def creatModel(args,
             classes=len(args.classes) + 1,
             in_channels=in_channels,
             activation=activation,
+            encoder_weights=encoder_weights,
+            encoder_name=encoder_name,
+        )
+    elif args.model_name == 'uper':
+        model = smp.UPerNet(
+            classes=len(args.classes) + 1,
+            in_channels=in_channels,
+            activation=activation,
+            encoder_weights=encoder_weights,
+            encoder_name=encoder_name,
+        )
+    elif args.model_name == 'unetp':
+        model = smp.UnetPlusPlus(
+            classes=len(args.classes) + 1,
+            in_channels=in_channels,
+            activation=activation,
+            decoder_attention_type='scse',
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
         )
@@ -54,7 +71,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
     parser.add_argument('--model_name', default="deeplab")
-    parser.add_argument('--encoder_name', default="mit_b4")
+    parser.add_argument('--encoder_name', default="tu-convnextv2_huge")
     parser.add_argument('--save_model', default="../model")
     args = parser.parse_args()
     model = creatModel(args,
