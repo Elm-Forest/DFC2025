@@ -7,12 +7,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from segmentation_models_pytorch.losses import LovaszLoss
 from timm.scheduler.cosine_lr import CosineLRScheduler
 from torch.utils.data import DataLoader
 
 import source
 from source.focal_loss import FocalLoss
+from source.lovasz_losses import LovaszLoss
 from source.model import creatModel
 
 warnings.filterwarnings("ignore")
