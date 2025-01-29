@@ -6,6 +6,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
+import segmentation_models_pytorch
 import torch
 from timm.scheduler.cosine_lr import CosineLRScheduler
 from torch.utils.data import DataLoader
@@ -58,7 +59,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
     os.makedirs(args.save_model, exist_ok=True)
     model_name = f"SAR_Pesudo_{args.save_model}_s{args.seed}_{criterion.name}"
     # dice_loss = DiceLoss().to(device)
-    focal_loss = FocalLoss(alpha=0.25, gamma=2.0, reduction='mean').to(device)
+    focal_loss = FocalLoss(alpha=0.5, gamma=1.5, reduction='mean').to(device)
     lovasz_loss = LovaszLoss(mode='binary').to(device)
     max_score = 0
     train_hist = []
@@ -129,7 +130,7 @@ def main(args):
             params += p.numel()
     print("Number of parameters: ", params)
 
-    classes_wt = np.ones([len(args.classes) + 1], dtype=np.float32)
+    classes_wt = np.array([1.0, 19.0])
     criterion = source.losses.CEWithLogitsLoss(weights=classes_wt)
     metric = source.metrics.IoU2()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
