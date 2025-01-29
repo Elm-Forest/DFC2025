@@ -142,6 +142,7 @@ def train_augm_binary(sample, size=512):
             ],
             p=0.2,
         ),
+        A.Normalize(normalization='standard'),
     ]
 
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
