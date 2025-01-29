@@ -139,11 +139,11 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', default=0)
-    parser.add_argument('--model_name', default="deeplab")
+    parser.add_argument('--model_name', default="uper")
     parser.add_argument('--encoder_name', default="mit_b5")
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
-    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_deeplabv3plus_mitb5_s0_CELoss.pth")
+    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_uper_mitb5_exp_ep40_337.pth")
     parser.add_argument('--save_results', default="results")
     args = parser.parse_args()
 
