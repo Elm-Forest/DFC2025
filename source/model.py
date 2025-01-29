@@ -14,6 +14,7 @@ def creatModel(args,
                encoder_name='mit_b4'):
     encoder_name = args.encoder_name
     if args.model_name == 'sam2':
+        print('Building SAM2+Segformer')
         model = smp.Segformer(
             classes=len(args.classes) + 1,
             in_channels=in_channels,
@@ -22,8 +23,10 @@ def creatModel(args,
             encoder_name='tu-sam2_hiera_large',
         )
     elif args.model_name == 'mit_unet':
+        print('Building mit_unet')
         model = Net(phi=args.model_size, pretrained=args.pretrained)
     elif args.model_name == 'segformer':
+        print('Building Segformer')
         model = smp.Segformer(
             classes=len(args.classes) + 1,
             in_channels=in_channels,
@@ -32,6 +35,7 @@ def creatModel(args,
             encoder_name=encoder_name,
         )
     elif args.model_name == 'deeplab':
+        print('Building DeepLabV3+')
         model = smp.DeepLabV3Plus(
             classes=len(args.classes) + 1,
             in_channels=in_channels,
@@ -40,6 +44,7 @@ def creatModel(args,
             encoder_name=encoder_name,
         )
     elif args.model_name == 'uper':
+        print('Building UPerNet')
         model = smp.UPerNet(
             classes=len(args.classes) + 1,
             in_channels=in_channels,
@@ -48,6 +53,7 @@ def creatModel(args,
             encoder_name=encoder_name,
         )
     elif args.model_name == 'unetp':
+        print('Building Unet++')
         model = smp.UnetPlusPlus(
             classes=len(args.classes) + 1,
             in_channels=in_channels,
@@ -57,6 +63,7 @@ def creatModel(args,
             encoder_name=encoder_name,
         )
     else:
+        print('Building Segformer')
         model = smp.Segformer(
             classes=len(args.classes) + 1,
             in_channels=in_channels,
