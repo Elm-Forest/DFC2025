@@ -35,8 +35,8 @@ def data_loader(args):
     print("Training samples   :", len(train_pths))
     print("Validation samples :", len(val_pths))
 
-    trainset = source.dataset.Dataset(train_pths, classes=args.classes, size=args.crop_size, train=True)
-    validset = source.dataset.Dataset(val_pths, classes=args.classes, train=False)
+    trainset = source.dataset.Dataset_limit(train_pths, classes=args.classes, size=args.crop_size, train=True)
+    validset = source.dataset.Dataset_limit(val_pths, classes=args.classes, train=False)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     valid_loader = DataLoader(validset, batch_size=args.batch_size_val, shuffle=False, num_workers=args.num_workers)
 

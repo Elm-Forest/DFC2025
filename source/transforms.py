@@ -97,6 +97,55 @@ def train_augm(sample, size=512):
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
 
 
+def train_augm_binary(sample, size=512):
+    augms = [
+        # # 旋转、平移、缩放
+        # A.ShiftScaleRotate(
+        #     scale_limit=0, rotate_limit=45, border_mode=0, p=1
+        # ),
+        A.Resize(height=size, width=size, p=1.0),  # 统一大小，不丢失信息
+        # 水平翻转
+        A.HorizontalFlip(p=0.5),
+        # 垂直翻转
+        A.VerticalFlip(p=0.5),
+
+        A.RandomRotate90(p=0.1),
+        # 下采样
+        A.Downscale(scale_range=(0.5, 0.75), p=0.05),
+
+        # 保留变形和噪声相关增强
+        A.OneOf(
+            [
+                # 弹性变换（Elastic Transform）
+                A.ElasticTransform(p=1),
+
+                # 光学畸变（Optical Distortion）
+                A.OpticalDistortion(p=1),
+
+                # 网格畸变（Grid Distortion）
+                A.GridDistortion(p=1),
+
+                # 透视变换（Perspective Transform）
+                # A.Perspective(p=1),  # p=1表示一定会应用透视变换
+            ],
+            p=0.1,
+        ),
+
+        # 噪声增强
+        A.OneOf(
+            [
+                A.GaussNoise(p=1),
+                A.MultiplicativeNoise(p=1),
+                A.Sharpen(p=1),
+                A.GaussianBlur(p=1),
+                A.MedianBlur(blur_limit=3, p=1),
+            ],
+            p=0.2,
+        ),
+    ]
+
+    return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
+
 def train_augm3(sample, size=512):
     augms = [
         A.PadIfNeeded(size, size, border_mode=0, value=0, p=1.0),
