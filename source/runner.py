@@ -57,7 +57,7 @@ def train_epoch(
             loss_ce = criterion(outputs, y)
             loss_focal = focal_loss(outputs, y)
             loss_lovasz = lovasz_loss(outputs.contiguous(), y)
-            loss = 0.35 * loss_ce + 0.5 * loss_lovasz + 0.15 * loss_focal
+            loss = 0.2 * loss_ce + 0.5 * loss_lovasz + 0.3 * loss_focal
             loss.backward()
             optimizer.step()
 

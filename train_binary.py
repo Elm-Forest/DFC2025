@@ -6,7 +6,6 @@ import warnings
 from pathlib import Path
 
 import numpy as np
-import segmentation_models_pytorch
 import torch
 from timm.scheduler.cosine_lr import CosineLRScheduler
 from torch.utils.data import DataLoader
@@ -36,7 +35,9 @@ def data_loader(args):
     print("Training samples   :", len(train_pths))
     print("Validation samples :", len(val_pths))
 
-    trainset = source.dataset.Dataset_limit(train_pths, classes=args.classes, size=args.crop_size, train=True)
+    trainset = source.dataset.Dataset_limit(train_pths, classes=args.classes, size=args.crop_size, train=True,
+                                            use_binary=True, cls_id=args.classes[0],
+                                            fiter_threshold=args.fiter_threshold)
     validset = source.dataset.Dataset_limit(val_pths, classes=args.classes, train=False)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     valid_loader = DataLoader(validset, batch_size=args.batch_size_val, shuffle=False, num_workers=args.num_workers)
@@ -130,7 +131,7 @@ def main(args):
             params += p.numel()
     print("Number of parameters: ", params)
 
-    classes_wt = np.array([1.0, 19.0])
+    classes_wt = np.array(args.class_weights)
     criterion = source.losses.CEWithLogitsLoss(weights=classes_wt)
     metric = source.metrics.IoU2()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
@@ -172,18 +173,21 @@ if __name__ == "__main__":
     parser.add_argument('--n_epochs', type=int, default=10)
     parser.add_argument('--warmup_epochs', type=int, default=3)
     parser.add_argument('--warmup_lr', type=float, default=5e-5)
-    parser.add_argument('--model_name', default="mit_b4")
+    parser.add_argument('--model_name', default="deeplab")
     parser.add_argument('--encoder_name', default="mit_b4")
     parser.add_argument('--model_size', default="b4")
     parser.add_argument('--batch_size', type=int, default=3)
     parser.add_argument('--batch_size_val', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=0)
     parser.add_argument('--train_proportion', type=float, default=0.9)
+    parser.add_argument('--fiter_threshold', type=float, default=0.01)
+    parser.add_argument('--class_weights', type=float, nargs='*', default=[1.0, 19.0])
+    parser.add_argument('--focal_alpha_gamma', type=float, nargs='*', default=[0.25, 2.0])
     parser.add_argument('--gpu_ids', type=str, default='0')
     parser.add_argument('--pretrained', type=str, default=None)
     parser.add_argument('--crop_size', type=int, default=512)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
-    parser.add_argument('--classes', default=[4])
+    parser.add_argument('--classes', type=int, nargs='*', default=[4])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
     parser.add_argument('--save_model', default="Binary_model")
     parser.add_argument('--save_results', default="results")

@@ -37,10 +37,9 @@ def save_img(path, img, crs, transform):
 
 
 class Dataset(BaseDataset):
-    def __init__(self, label_list, classes=None, size=128, train=False, use_binary=False):
+    def __init__(self, label_list, classes=None, size=128, train=False):
         self.fns = label_list
         self.augm = T.train_augm if train else T.valid_augm
-        self.augm = T.train_augm_binary if train and use_binary else self.augm
         self.size = size
         self.train = train
         self.to_tensor = T.ToTensor(classes=classes)
@@ -65,7 +64,8 @@ class Dataset(BaseDataset):
 
 
 class Dataset_limit(BaseDataset):
-    def __init__(self, label_list, classes=None, size=128, train=False, use_binary=False):
+    def __init__(self, label_list, classes=None, size=128, train=False,
+                 use_binary=False, cls_id=4, fiter_threshold=0.01):
         self.augm = T.train_augm if train else T.valid_augm
         self.augm = T.train_augm_binary if train and use_binary else self.augm
         self.size = size
@@ -73,7 +73,10 @@ class Dataset_limit(BaseDataset):
         self.to_tensor = T.ToTensor(classes=classes)
         self.load_multiband = load_multiband
         self.load_grayscale = load_grayscale
-        # 过滤 label_list，仅保留 4 的面积占比 > 0.01 的样本
+        self.use_binary = use_binary
+        self.cls_id = cls_id
+        self.fiter_threshold = fiter_threshold
+        # 过滤 label_list，仅保留 cls_id 面积占比 > self.cls_id 的样本
         self.fns = self.filter_labels(label_list)
 
     def filter_labels(self, label_list):
@@ -84,13 +87,13 @@ class Dataset_limit(BaseDataset):
             msk_array = np.array(msk)  # 转换为 numpy 数组
 
             total_pixels = msk_array.size  # 总像素数
-            num_pixels_4 = np.sum(msk_array == 4)  # 计算 4 的像素数量
-            proportion = num_pixels_4 / total_pixels  # 计算 4 的占比
+            num_pixels = np.sum(msk_array == self.cls_id)  # 计算像素数量
+            proportion = num_pixels / total_pixels  # 计算占比
 
-            if proportion > 0.01:
+            if proportion > self.fiter_threshold:
                 valid_labels.append(label_path)
 
-        print(f"过滤后剩余 {len(valid_labels)} 个样本（4 的面积占比 > 0.01）")
+        print(f"过滤后剩余 {len(valid_labels)} 个样本（{self.cls_id} 的面积占比 > {self.fiter_threshold}）")
         return valid_labels
 
     def __getitem__(self, idx):
