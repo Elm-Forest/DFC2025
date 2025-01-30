@@ -60,7 +60,8 @@ def train_model(args, model, optimizer, criterion, metric, device):
     os.makedirs(args.save_model, exist_ok=True)
     model_name = f"SAR_Pesudo_{args.save_model}_s{args.seed}_{criterion.name}"
     # dice_loss = DiceLoss().to(device)
-    focal_loss = FocalLoss(alpha=0.5, gamma=1.5, reduction='mean').to(device)
+    focal_loss = FocalLoss(alpha=args.focal_alpha_gamma[0], gamma=args.focal_alpha_gamma[1], reduction='mean').to(
+        device)
     lovasz_loss = LovaszLoss(mode='binary').to(device)
     max_score = 0
     train_hist = []

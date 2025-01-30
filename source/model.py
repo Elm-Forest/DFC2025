@@ -62,70 +62,37 @@ def creatModel(args,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
         )
-    else:
-        print('Building Segformer')
-        model = smp.Segformer(
+    elif args.model_name == 'psp':
+        print('Building PSPNet')
+        model = smp.PSPNet(
             classes=len(args.classes) + 1,
             in_channels=in_channels,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
         )
-    return model
-
-
-def creatBinaryModel(args,
-                     in_channels=1,
-                     activation=None,
-                     encoder_weights="imagenet",
-                     encoder_name='mit_b4'):
-    encoder_name = args.encoder_name
-    if args.model_name == 'sam2':
-        model = smp.Segformer(
-            classes=1 + 1,
-            in_channels=in_channels,
-            activation=activation,
-            encoder_weights=encoder_weights,
-            encoder_name='tu-sam2_hiera_large',
-        )
-    elif args.model_name == 'mit_unet':
-        model = Net(phi=args.model_size, pretrained=args.pretrained)
-    elif args.model_name == 'segformer':
-        model = smp.Segformer(
-            classes=1,
+    elif args.model_name == 'ma':
+        print('Building MAnet')
+        model = smp.MAnet(
+            classes=len(args.classes) + 1,
             in_channels=in_channels,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
         )
-    elif args.model_name == 'deeplab':
-        model = smp.DeepLabV3Plus(
-            classes=1,
+    elif args.model_name == 'link':
+        print('Building Linknet')
+        model = smp.Linknet(
+            classes=len(args.classes) + 1,
             in_channels=in_channels,
             activation=activation,
-            encoder_weights=encoder_weights,
-            encoder_name=encoder_name,
-        )
-    elif args.model_name == 'uper':
-        model = smp.UPerNet(
-            classes=1,
-            in_channels=in_channels,
-            activation=activation,
-            encoder_weights=encoder_weights,
-            encoder_name=encoder_name,
-        )
-    elif args.model_name == 'unetp':
-        model = smp.UnetPlusPlus(
-            classes=1,
-            in_channels=in_channels,
-            activation=activation,
-            decoder_attention_type='scse',
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
         )
     else:
+        print('Building Segformer')
         model = smp.Segformer(
-            classes=1,
+            classes=len(args.classes) + 1,
             in_channels=in_channels,
             activation=activation,
             encoder_weights=encoder_weights,
