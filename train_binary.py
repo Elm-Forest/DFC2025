@@ -38,7 +38,8 @@ def data_loader(args):
     trainset = source.dataset.Dataset_limit(train_pths, classes=args.classes, size=args.crop_size, train=True,
                                             use_binary=True, cls_id=args.classes[0],
                                             fiter_threshold=args.fiter_threshold)
-    validset = source.dataset.Dataset_limit(val_pths, classes=args.classes, train=False)
+    validset = source.dataset.Dataset_limit(val_pths, classes=args.classes, train=False, use_binary=False,
+                                            cls_id=args.classes[0], fiter_threshold=args.fiter_threshold)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     valid_loader = DataLoader(validset, batch_size=args.batch_size_val, shuffle=False, num_workers=args.num_workers)
 
