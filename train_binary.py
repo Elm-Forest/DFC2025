@@ -159,10 +159,13 @@ def main(args):
             [dict(params=model.module.parameters(), lr=args.learning_rate)]
         )
 
-    print("Number of epochs   :", args.n_epochs)
-    print("Number of classes  :", len(args.classes) + 1)
-    print("Batch size         :", args.batch_size)
-    print("Device             :", device)
+    print("Number of epochs    :", args.n_epochs)
+    print("Number of classes   :", len(args.classes) + 1)
+    print("Batch size          :", args.batch_size)
+    print("Device              :", device)
+    print("Class weights       :", args.class_weights)
+    print("Focal loss          :", args.focal_alpha_gamma)
+    print("Class id            :", args.classes)
 
     # training model
     train_model(args, model, optimizer, criterion, metric, device)
