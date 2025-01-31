@@ -59,7 +59,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
                                   warmup_lr_init=args.warmup_lr)
     # create folder to save model
     os.makedirs(args.save_model, exist_ok=True)
-    model_name = f"SAR_Pesudo_{args.save_model}_s{args.seed}_{criterion.name}"
+    model_name = f"Binary_{args.save_model}_s{args.seed}_{criterion.name}"
     # dice_loss = DiceLoss().to(device)
     focal_loss = FocalLoss(alpha=args.focal_alpha_gamma[0], gamma=args.focal_alpha_gamma[1], reduction='mean').to(
         device)
@@ -81,6 +81,10 @@ def train_model(args, model, optimizer, criterion, metric, device):
             lovasz_loss=lovasz_loss,
             focal_loss=focal_loss,
         )
+
+        if (epoch+1) % args.save_checkpoint_ep == 0:
+            torch.save(model.state_dict(), os.path.join(args.save_checkpoint, f"checkpoint_ep{epoch}_{model_name}.pth"))
+            print("Checkpoint saved in the folder : ", args.save_checkpoint)
 
         logs_valid = source.runner.valid_epoch(
             model=model,
@@ -195,6 +199,8 @@ if __name__ == "__main__":
     parser.add_argument('--classes', type=int, nargs='*', default=[4])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
     parser.add_argument('--save_model', default="Binary_model")
+    parser.add_argument('--save_checkpoint', default="checkpoints")
+    parser.add_argument('--save_checkpoint_ep', type=int, default=5)
     parser.add_argument('--save_results', default="results")
     args = parser.parse_args()
 

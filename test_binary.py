@@ -137,14 +137,14 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Model Training')
+    parser = argparse.ArgumentParser(description='Model Testing')
     parser.add_argument('--seed', default=0)
     parser.add_argument('--model_name', default="deeplab")
     parser.add_argument('--encoder_name', default="mit_b4")
-    parser.add_argument('--classes', default=[4])
+    parser.add_argument('--classes', default=[8])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
-    parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_binary_deeplab_b4_exp_s0_CELoss.pth")
-    parser.add_argument('--save_results', default="results_binary")
+    parser.add_argument('--pretrained_model', default="model/cid8_building_deeplab_mitb4_exp_s0_CELoss.pth")
+    parser.add_argument('--save_results', default="8_result_building")
     args = parser.parse_args()
 
     start = time.time()
