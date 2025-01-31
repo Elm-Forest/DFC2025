@@ -82,7 +82,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
             focal_loss=focal_loss,
         )
 
-        if (epoch+1) % args.save_checkpoint_ep == 0:
+        if (epoch + 1) % args.save_checkpoint_ep == 0:
             torch.save(model.state_dict(), os.path.join(args.save_checkpoint, f"checkpoint_ep{epoch}_{model_name}.pth"))
             print("Checkpoint saved in the folder : ", args.save_checkpoint)
 
@@ -140,8 +140,10 @@ def main(args):
     classes_wt = np.array(args.class_weights)
     criterion = source.losses.CEWithLogitsLoss(weights=classes_wt)
     metric = source.metrics.IoU2()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-
+    optimizer = torch.optim.Adam(model.parameters(),
+                                 lr=args.learning_rate,
+                                 weight_decay=args.weight_decay,
+                                 fused=True)
     if args.pretrained is not None:
         print("Loading weights...")
         weights = torch.load(args.pretrained, map_location=torch.device('cpu'))
@@ -196,6 +198,7 @@ if __name__ == "__main__":
     parser.add_argument('--pretrained', type=str, default=None)
     parser.add_argument('--crop_size', type=int, default=512)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
+    parser.add_argument('--weight_decay', type=float, default=1e-4)
     parser.add_argument('--classes', type=int, nargs='*', default=[4])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
     parser.add_argument('--save_model', default="Binary_model")
