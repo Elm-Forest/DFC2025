@@ -65,7 +65,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
     # create folder to save model
     os.makedirs(args.save_model, exist_ok=True)
     os.makedirs(args.save_checkpoint, exist_ok=True)
-    model_name = f"Binary_{args.save_model}_s{args.seed}_{criterion.name}"
+    model_name = f"Binary_{args.save_model}_s{args.seed}"
     # dice_loss = DiceLoss().to(device)
     # focal_loss = FocalLoss(alpha=args.focal_alpha_gamma[0],
     #                        gamma=args.focal_alpha_gamma[1],
