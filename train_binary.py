@@ -149,7 +149,7 @@ def main(args):
             params += p.numel()
     print("Number of parameters: ", params)
     classes_wt = np.array(args.class_weights)
-    criterion = source.losses.CEWithLogitsLoss(weights=classes_wt)
+    criterion = source.losses.CEWithLogitsLoss(weights=classes_wt).to(device)
     metric = source.metrics.IoU2()
     model.to(device)
     optimizer = Adan(model.parameters(),
