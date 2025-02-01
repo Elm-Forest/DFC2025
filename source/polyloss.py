@@ -5,7 +5,7 @@ from torch import Tensor
 
 
 class Poly1CrossEntropyLoss(nn.Module):
-    def __init__(self,
+    def     __init__(self,
                  num_classes: int,
                  epsilon: float = 1.0,
                  reduction: str = "none",

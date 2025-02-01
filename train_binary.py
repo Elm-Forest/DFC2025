@@ -72,6 +72,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
     #                        label_smoothing=0.1,
     #                        reduction='mean').to(device)
     focal_loss = Poly1FocalLoss(num_classes=2,
+                                label_is_onehot=False,
                                 alpha=args.focal_alpha_gamma[0],
                                 gamma=args.focal_alpha_gamma[1],
                                 reduction='mean').to(device)
@@ -153,8 +154,9 @@ def main(args):
             params += p.numel()
     print("Number of parameters: ", params)
     classes_wt = np.array(args.class_weights)
-    criterion = Poly1CrossEntropyLoss(num_classes=2, weight=torch.from_numpy(classes_wt).float().to(device)).to(device)
-    # criterion = source.losses.CEWithLogitsLoss(weights=classes_wt).to(device)
+    # criterion = Poly1CrossEntropyLoss(num_classes=2,
+    #                                   weight=torch.from_numpy(classes_wt).float().to(device)).to(device)
+    criterion = source.losses.CEWithLogitsLoss(weights=classes_wt).to(device)
     metric = source.metrics.IoU2()
     model.to(device)
     optimizer = Adan(model.parameters(),
