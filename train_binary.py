@@ -57,6 +57,8 @@ def train_model(args, model, optimizer, criterion, metric, device):
     scheduler = CosineLRScheduler(optimizer=optimizer,
                                   t_initial=uint,
                                   cycle_limit=args.lr_cycle,
+                                  cycle_mul=0.95,
+                                  cycle_decay=0.8,
                                   lr_min=1e-6,
                                   warmup_t=args.warmup_epochs,
                                   warmup_lr_init=args.warmup_lr)
@@ -104,6 +106,9 @@ def train_model(args, model, optimizer, criterion, metric, device):
         train_hist.append(logs_train)
         valid_hist.append(logs_valid)
         score = logs_valid[metric.name]
+
+        # necessary print
+        print('CE weights:', criterion.weight)
 
         if max_score < score:
             max_score = score
