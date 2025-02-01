@@ -55,7 +55,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
     uint = args.n_epochs // args.lr_cycle
     scheduler = CosineLRScheduler(optimizer=optimizer,
                                   t_initial=uint,
-                                  cycle_limit=args.cycle_limit,
+                                  cycle_limit=args.lr_cycle,
                                   lr_min=1e-6,
                                   warmup_t=args.warmup_epochs,
                                   warmup_lr_init=args.warmup_lr)
