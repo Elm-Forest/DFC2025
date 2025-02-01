@@ -41,7 +41,7 @@ class DiceLoss(nn.Module):
 class CEWithLogitsLoss(nn.Module):
     def __init__(self, weights, device="cuda"):
         super().__init__()
-        self.weight = nn.Parameter(torch.from_numpy(weights).float().to(device))
+        self.weight = torch.from_numpy(weights).float().to(device)
         self.criterion = nn.CrossEntropyLoss(weight=self.weight, label_smoothing=0.1)
         self.name = "CELoss"
 
