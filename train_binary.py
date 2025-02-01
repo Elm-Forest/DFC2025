@@ -52,9 +52,10 @@ def train_model(args, model, optimizer, criterion, metric, device):
 
     # initialize learning rate scheduler
     # scheduler = CosineAnnealingLR(optimizer, T_max=args.n_epochs, eta_min=0)
+    uint = args.n_epochs // args.lr_cycle
     scheduler = CosineLRScheduler(optimizer=optimizer,
-                                  t_initial=args.n_epochs,
-                                  lr_min=5e-6,
+                                  t_initial=uint,
+                                  lr_min=1e-6,
                                   warmup_t=args.warmup_epochs,
                                   warmup_lr_init=args.warmup_lr)
     # create folder to save model
@@ -81,6 +82,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
             dice_loss=None,
             lovasz_loss=lovasz_loss,
             focal_loss=focal_loss,
+            args=args,
         )
 
         if (epoch + 1) % args.save_checkpoint_ep == 0:
@@ -137,14 +139,14 @@ def main(args):
         if p.requires_grad:
             params += p.numel()
     print("Number of parameters: ", params)
-
     classes_wt = np.array(args.class_weights)
     criterion = source.losses.CEWithLogitsLoss(weights=classes_wt)
     metric = source.metrics.IoU2()
-    optimizer = torch.optim.Adam(model.parameters(),
-                                 lr=args.learning_rate,
-                                 weight_decay=args.weight_decay,
-                                 fused=True)
+    model.to(device)
+    optimizer = torch.optim.AdamW(model.parameters(),
+                                  lr=args.learning_rate,
+                                  weight_decay=args.weight_decay,
+                                  fused=True)
     if args.pretrained is not None:
         print("Loading weights...")
         weights = torch.load(args.pretrained, map_location=torch.device('cpu'))
@@ -183,8 +185,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--n_epochs', type=int, default=10)
-    parser.add_argument('--warmup_epochs', type=int, default=3)
-    parser.add_argument('--warmup_lr', type=float, default=5e-5)
     parser.add_argument('--model_name', default="deeplab")
     parser.add_argument('--encoder_name', default="mit_b4")
     parser.add_argument('--model_size', default="b4")
@@ -200,6 +200,9 @@ if __name__ == "__main__":
     parser.add_argument('--pretrained', type=str, default=None)
     parser.add_argument('--crop_size', type=int, default=512)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
+    parser.add_argument('--lr_cycle', type=int, default=5)
+    parser.add_argument('--warmup_epochs', type=int, default=3)
+    parser.add_argument('--warmup_lr', type=float, default=5e-5)
     parser.add_argument('--weight_decay', type=float, default=1e-4)
     parser.add_argument('--classes', type=int, nargs='*', default=[4])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")

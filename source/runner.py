@@ -26,6 +26,9 @@ def format_logs(logs):
     return ", ".join(str_logs)
 
 
+import torch
+from torch.cuda.amp import autocast, GradScaler
+
 def train_epoch(
         model=None,
         optimizer=None,
@@ -46,6 +49,9 @@ def train_epoch(
     score_meter = AverageMeter()
     logs = {}
 
+    # Initialize AMP scaler
+    scaler = GradScaler()
+
     model.to(device).train()
     with tqdm(dataloader, desc="Train") as iterator:
         for sample in iterator:
@@ -54,28 +60,34 @@ def train_epoch(
             n = x.shape[0]
 
             optimizer.zero_grad()
-            outputs = model.forward(x)
-            loss_ce = criterion(outputs, y)
-            loss_focal = focal_loss(outputs, y)
-            loss_lovasz = lovasz_loss(outputs.contiguous(), y)
-            w_ce, w_focal, w_lovasz = args.weight_ce_focal_lovasz[0], args.weight_ce_focal_lovasz[1], args.weight_ce_focal_lovasz[2]
-            loss = w_ce * loss_ce + w_lovasz * loss_lovasz + w_focal * loss_focal
-            loss.backward()
-            optimizer.step()
+
+            # Forward pass with AMP
+            with autocast():  # Automatic mixed precision context
+                outputs = model(x)
+                loss_ce = criterion(outputs, y)
+                loss_focal = focal_loss(outputs, y)
+                loss_lovasz = lovasz_loss(outputs.contiguous(), y)
+                w_ce, w_focal, w_lovasz = args.weight_ce_focal_lovasz[0], args.weight_ce_focal_lovasz[1], args.weight_ce_focal_lovasz[2]
+                loss = w_ce * loss_ce + w_lovasz * loss_lovasz + w_focal * loss_focal
+
+            # Backward pass with AMP
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()  # Update the scaler for the next iteration
 
             loss_meter.update(loss.cpu().detach().numpy(), n=n)
             loss_meter_ce.update((loss_ce + loss_focal).cpu().detach().numpy(), n=n)
             loss_meter_lovasz.update(loss_focal.cpu().detach().numpy(), n=n)
             score_meter.update(metric(outputs, y).cpu().detach().numpy(), n=n)
-            # print()
-            # print('focal loss:', loss_focal.cpu().detach().numpy(), 'lovasz loss:', loss_lovasz.cpu().detach().numpy())
-            # logs.update({'loss': loss_meter.avg})
+
             logs.update({metric.name: score_meter.avg})
             logs.update({'ce': loss_meter_ce.avg})
             logs.update({'lovasz': loss_meter_lovasz.avg})
 
             iterator.set_postfix_str(format_logs(logs))
+
     return logs
+
 
 
 def valid_epoch(
