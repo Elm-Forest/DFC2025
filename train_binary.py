@@ -72,7 +72,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
     #                        label_smoothing=0.1,
     #                        reduction='mean').to(device)
     focal_loss = Poly1FocalLoss(num_classes=2,
-                                label_is_onehot=False,
+                                label_is_onehot=True,
                                 alpha=args.focal_alpha_gamma[0],
                                 gamma=args.focal_alpha_gamma[1],
                                 reduction='mean').to(device)
