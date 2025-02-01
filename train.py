@@ -177,6 +177,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=3)
     parser.add_argument('--batch_size_val', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=0)
+    parser.add_argument('--weight_ce_focal_lovasz', type=float, nargs='*', default=[0.35, 0.5, 0.15])
     parser.add_argument('--train_proportion', type=float, default=0.9)
     parser.add_argument('--gpu_ids', type=str, default='0')
     parser.add_argument('--pretrained', type=str, default=None)

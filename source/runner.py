@@ -38,6 +38,7 @@ def train_epoch(
         dice_loss=None,
         lovasz_loss=None,
         focal_loss=None,
+        args=None
 ):
     loss_meter = AverageMeter()
     loss_meter_ce = AverageMeter()
@@ -57,7 +58,8 @@ def train_epoch(
             loss_ce = criterion(outputs, y)
             loss_focal = focal_loss(outputs, y)
             loss_lovasz = lovasz_loss(outputs.contiguous(), y)
-            loss = 0.2 * loss_ce + 0.5 * loss_lovasz + 0.3 * loss_focal
+            w_ce, w_focal, w_lovasz = args.weight_ce_focal_lovasz[0], args.weight_ce_focal_lovasz[1], args.weight_ce_focal_lovasz[2]
+            loss = w_ce * loss_ce + w_lovasz * loss_lovasz + w_focal * loss_focal
             loss.backward()
             optimizer.step()
 
