@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from timm.optim import Adan
 from timm.scheduler.cosine_lr import CosineLRScheduler
 from torch.utils.data import DataLoader
 
@@ -146,9 +147,12 @@ def main(args):
     criterion = source.losses.CEWithLogitsLoss(weights=classes_wt)
     metric = source.metrics.IoU2()
     model.to(device)
-    optimizer = torch.optim.AdamW(model.parameters(),
-                                  lr=args.learning_rate,
-                                  weight_decay=args.weight_decay)
+    optimizer = Adan(model.parameters(),
+                     lr=args.learning_rate,
+                     weight_decay=args.weight_decay)
+    # optimizer = torch.optim.NAdam(model.parameters(),
+    #                               lr=args.learning_rate,
+    #                               weight_decay=args.weight_decay)
     if args.pretrained is not None:
         print("Loading weights...")
         weights = torch.load(args.pretrained, map_location=torch.device('cpu'))
