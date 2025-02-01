@@ -55,6 +55,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
     uint = args.n_epochs // args.lr_cycle
     scheduler = CosineLRScheduler(optimizer=optimizer,
                                   t_initial=uint,
+                                  cycle_limit=args.cycle_limit,
                                   lr_min=1e-6,
                                   warmup_t=args.warmup_epochs,
                                   warmup_lr_init=args.warmup_lr)
@@ -63,8 +64,10 @@ def train_model(args, model, optimizer, criterion, metric, device):
     os.makedirs(args.save_checkpoint, exist_ok=True)
     model_name = f"Binary_{args.save_model}_s{args.seed}_{criterion.name}"
     # dice_loss = DiceLoss().to(device)
-    focal_loss = FocalLoss(alpha=args.focal_alpha_gamma[0], gamma=args.focal_alpha_gamma[1], reduction='mean').to(
-        device)
+    focal_loss = FocalLoss(alpha=args.focal_alpha_gamma[0],
+                           gamma=args.focal_alpha_gamma[1],
+                           label_smoothing=0.1,
+                           reduction='mean').to(device)
     lovasz_loss = LovaszLoss(mode='binary').to(device)
     max_score = 0
     train_hist = []
@@ -145,8 +148,7 @@ def main(args):
     model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(),
                                   lr=args.learning_rate,
-                                  weight_decay=args.weight_decay,
-                                  fused=True)
+                                  weight_decay=args.weight_decay)
     if args.pretrained is not None:
         print("Loading weights...")
         weights = torch.load(args.pretrained, map_location=torch.device('cpu'))
