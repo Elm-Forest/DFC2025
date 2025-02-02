@@ -256,7 +256,7 @@ if __name__ == "__main__":
     parser.add_argument('--warmup_epochs', type=int, default=3)
     parser.add_argument('--warmup_lr', type=float, default=5e-5)
     parser.add_argument('--weight_decay', type=float, default=1e-4)
-    parser.add_argument("--local_rank", default=os.getenv('LOCAL_RANK', -1), type=int)
+    parser.add_argument("--local-rank", default=os.getenv('LOCAL_RANK', -1), type=int)
     parser.add_argument('--use_ddp', type=int, default=0)
     parser.add_argument('--classes', type=int, nargs='*', default=[4])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
