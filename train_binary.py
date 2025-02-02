@@ -49,7 +49,7 @@ def data_loader(args):
                               num_workers=args.num_workers,
                               pin_memory=True)
     train_sampler = None
-    if torch.cuda.device_count() > 1 and args.use_ddp:
+    if torch.cuda.device_count() > 1 and args.use_ddp == 1:
         from torch.utils.data.distributed import DistributedSampler
 
         train_sampler = DistributedSampler(trainset)
@@ -149,7 +149,7 @@ def main(args):
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     local_rank = os.getenv('LOCAL_RANK', -1)
-    if torch.cuda.device_count() > 1 and args.use_ddp:
+    if torch.cuda.device_count() > 1 and args.use_ddp == 1:
         print("Parallel training!")
         # os.environ["CUDA_VISIBLE_DEVICES"] = opts.gpu_ids
         if local_rank != -1:
@@ -204,7 +204,7 @@ def main(args):
                 print('pass loading weights')
                 print(inst)
 
-    if torch.cuda.device_count() > 1 and args.use_ddp:
+    if torch.cuda.device_count() > 1 and args.use_ddp == 1:
         print("Using DDP")
         print("Number of GPUs :", torch.cuda.device_count())
         model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
@@ -256,7 +256,8 @@ if __name__ == "__main__":
     parser.add_argument('--warmup_epochs', type=int, default=3)
     parser.add_argument('--warmup_lr', type=float, default=5e-5)
     parser.add_argument('--weight_decay', type=float, default=1e-4)
-    parser.add_argument('--use_ddp', type=bool, default=False)
+    parser.add_argument("--local_rank", default=os.getenv('LOCAL_RANK', -1), type=int)
+    parser.add_argument('--use_ddp', type=int, default=0)
     parser.add_argument('--classes', type=int, nargs='*', default=[4])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
     parser.add_argument('--save_model', default="Binary_model")
