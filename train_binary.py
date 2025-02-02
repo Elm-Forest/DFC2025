@@ -209,7 +209,7 @@ def main(args):
         print("Using DDP")
         print("Number of GPUs :", torch.cuda.device_count())
         model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
-                                                    output_device=local_rank, find_unused_parameters=False)
+                                                    output_device=local_rank, find_unused_parameters=True)
         optimizer = Adan(params=model.module.parameters(),
                          lr=args.learning_rate,
                          weight_decay=args.weight_decay)
