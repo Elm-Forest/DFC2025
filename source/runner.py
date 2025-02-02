@@ -1,4 +1,3 @@
-import torch
 from tqdm import tqdm
 
 
@@ -28,6 +27,7 @@ def format_logs(logs):
 
 import torch
 from torch.cuda.amp import autocast, GradScaler
+
 
 def train_epoch(
         model=None,
@@ -67,7 +67,8 @@ def train_epoch(
                 loss_ce = criterion(outputs, y)
                 loss_focal = focal_loss(outputs, y)
                 loss_lovasz = lovasz_loss(outputs.contiguous(), y)
-                w_ce, w_focal, w_lovasz = args.weight_ce_focal_lovasz[0], args.weight_ce_focal_lovasz[1], args.weight_ce_focal_lovasz[2]
+                w_ce, w_focal, w_lovasz = args.weight_ce_focal_lovasz[0], args.weight_ce_focal_lovasz[1], \
+                args.weight_ce_focal_lovasz[2]
                 loss = w_ce * loss_ce + w_lovasz * loss_lovasz + w_focal * loss_focal
 
             # Backward pass with AMP
@@ -87,7 +88,6 @@ def train_epoch(
             iterator.set_postfix_str(format_logs(logs))
 
     return logs
-
 
 
 def valid_epoch(

@@ -9,12 +9,13 @@ import numpy as np
 import torch
 from timm.optim import Adan
 from timm.scheduler.cosine_lr import CosineLRScheduler
+from torch import nn
 from torch.utils.data import DataLoader
 
 import source
 from source.lovasz_losses import LovaszLoss
 from source.model import creatModel
-from source.polyloss import Poly1CrossEntropyLoss, Poly1FocalLoss
+from source.polyloss import Poly1FocalLoss
 
 warnings.filterwarnings("ignore")
 
@@ -41,15 +42,25 @@ def data_loader(args):
                                             fiter_threshold=args.fiter_threshold)
     validset = source.dataset.Dataset_limit(val_pths, classes=args.classes, train=False, use_binary=False,
                                             cls_id=args.classes[0], fiter_threshold=args.fiter_threshold)
-    train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
-    valid_loader = DataLoader(validset, batch_size=args.batch_size_val, shuffle=False, num_workers=args.num_workers)
+    train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,
+                              num_workers=args.num_workers,
+                              pin_memory=True)
+    valid_loader = DataLoader(validset, batch_size=args.batch_size_val, shuffle=False,
+                              num_workers=args.num_workers,
+                              pin_memory=True)
+    train_sampler = None
+    if torch.cuda.device_count() > 1 and args.use_ddp:
+        from torch.utils.data.distributed import DistributedSampler
 
-    return train_loader, valid_loader
+        train_sampler = DistributedSampler(trainset)
+        train_loader = DataLoader(trainset, sampler=train_sampler, batch_size=args.batch_size,
+                                  num_workers=args.num_workers, pin_memory=True, shuffle=False)
+    return train_loader, valid_loader, train_sampler
 
 
 def train_model(args, model, optimizer, criterion, metric, device):
     # get dataset loaders
-    train_data_loader, val_data_loader = data_loader(args)
+    train_data_loader, val_data_loader, train_sampler = data_loader(args)
 
     # initialize learning rate scheduler
     # scheduler = CosineAnnealingLR(optimizer, T_max=args.n_epochs, eta_min=0)
@@ -71,6 +82,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
     #                        gamma=args.focal_alpha_gamma[1],
     #                        label_smoothing=0.1,
     #                        reduction='mean').to(device)
+
     focal_loss = Poly1FocalLoss(num_classes=2,
                                 label_is_onehot=True,
                                 alpha=args.focal_alpha_gamma[0],
@@ -83,6 +95,8 @@ def train_model(args, model, optimizer, criterion, metric, device):
     for epoch in range(args.n_epochs):
         print(f"\nEpoch: {epoch + 1}")
         print(f"Learning rate: {optimizer.param_groups[0]['lr']}\n")
+        if train_sampler is not None:
+            train_sampler.set_epoch(epoch)
         logs_train = source.runner.train_epoch(
             model=model,
             optimizer=optimizer,
@@ -93,7 +107,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
             dice_loss=None,
             lovasz_loss=lovasz_loss,
             focal_loss=focal_loss,
-            args=args,
+            args=args
         )
 
         if (epoch + 1) % args.save_checkpoint_ep == 0:
@@ -131,10 +145,20 @@ def main(args):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.benchmark = True
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    local_rank = os.getenv('LOCAL_RANK', -1)
+    if torch.cuda.device_count() > 1 and args.use_ddp:
+        print("Parallel training!")
+        # os.environ["CUDA_VISIBLE_DEVICES"] = opts.gpu_ids
+        if local_rank != -1:
+            torch.cuda.set_device(local_rank)
+            device = torch.device("cuda", local_rank)
+            torch.distributed.init_process_group(backend="nccl", init_method='env://')
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # using UNet with EfficientNet-B4 backbone
     # model = smp.Unet(
     #     classes=len(args.classes) + 1,
@@ -180,12 +204,22 @@ def main(args):
                 print('pass loading weights')
                 print(inst)
 
-    if torch.cuda.device_count() > 1:
+    if torch.cuda.device_count() > 1 and args.use_ddp:
+        print("Using DDP")
+        print("Number of GPUs :", torch.cuda.device_count())
+        model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
+                                                    output_device=local_rank, find_unused_parameters=False)
+        optimizer = Adan(params=model.module.parameters(),
+                         lr=args.learning_rate,
+                         weight_decay=args.weight_decay)
+
+    elif torch.cuda.device_count() > 1:
+        print("Using DP")
         print("Number of GPUs :", torch.cuda.device_count())
         model = torch.nn.DataParallel(model)
-        optimizer = torch.optim.Adam(
-            [dict(params=model.module.parameters(), lr=args.learning_rate)]
-        )
+        optimizer = Adan(params=model.module.parameters(),
+                         lr=args.learning_rate,
+                         weight_decay=args.weight_decay)
 
     print("Number of epochs    :", args.n_epochs)
     print("Number of classes   :", len(args.classes) + 1)
@@ -222,6 +256,7 @@ if __name__ == "__main__":
     parser.add_argument('--warmup_epochs', type=int, default=3)
     parser.add_argument('--warmup_lr', type=float, default=5e-5)
     parser.add_argument('--weight_decay', type=float, default=1e-4)
+    parser.add_argument('--use_ddp', type=bool, default=False)
     parser.add_argument('--classes', type=int, nargs='*', default=[4])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
     parser.add_argument('--save_model', default="Binary_model")
