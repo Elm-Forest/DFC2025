@@ -38,9 +38,9 @@ def data_loader(args):
     print("Validation samples :", len(val_pths))
 
     trainset = source.dataset.Dataset_limit(train_pths, classes=args.classes, size=args.crop_size, train=True,
-                                            use_binary=True, cls_id=args.classes[0],
+                                            use_binary_aug=args.use_binary_aug, cls_id=args.classes[0],
                                             fiter_threshold=args.fiter_threshold)
-    validset = source.dataset.Dataset_limit(val_pths, classes=args.classes, train=False, use_binary=False,
+    validset = source.dataset.Dataset_limit(val_pths, classes=args.classes, train=False, use_binary_aug=False,
                                             cls_id=args.classes[0], fiter_threshold=args.fiter_threshold)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.num_workers,
@@ -153,7 +153,6 @@ def main(args):
         print("Parallel training!")
         # os.environ["CUDA_VISIBLE_DEVICES"] = opts.gpu_ids
         if local_rank != -1:
-
             torch.cuda.set_device(local_rank)
             device = torch.device("cuda", local_rank)
             torch.distributed.init_process_group(backend="nccl", init_method='env://')
@@ -259,6 +258,7 @@ if __name__ == "__main__":
     parser.add_argument('--weight_decay', type=float, default=1e-4)
     parser.add_argument("--local-rank", default=os.getenv('LOCAL_RANK', -1), type=int)
     parser.add_argument('--use_ddp', type=int, default=0)
+    parser.add_argument('--use_binary_aug', action="store_true")
     parser.add_argument('--classes', type=int, nargs='*', default=[4])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/train")
     parser.add_argument('--save_model', default="Binary_model")

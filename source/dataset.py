@@ -65,19 +65,18 @@ class Dataset(BaseDataset):
 
 class Dataset_limit(BaseDataset):
     def __init__(self, label_list, classes=None, size=128, train=False,
-                 use_binary=False, cls_id=4, fiter_threshold=0.01):
+                 use_binary_aug=False, cls_id=4, fiter_threshold=0.01):
         self.augm = T.train_augm if train else T.valid_augm
-        self.augm = T.train_augm_binary if train and use_binary else self.augm
+        self.augm = T.train_augm_binary if train and use_binary_aug else self.augm
         self.size = size
         self.train = train
         self.to_tensor = T.ToTensor(classes=classes)
         self.load_multiband = load_multiband
         self.load_grayscale = load_grayscale
-        self.use_binary = use_binary
         self.cls_id = cls_id
         self.fiter_threshold = fiter_threshold
         # 过滤 label_list，仅保留 cls_id 面积占比 > self.cls_id 的样本
-        self.fns = self.filter_labels(label_list)
+        self.fns = self.filter_labels(label_list) if fiter_threshold > 0 else label_list
 
     def filter_labels(self, label_list):
         """ 过滤 4 的占比 > 0.01 的 mask 文件 """
