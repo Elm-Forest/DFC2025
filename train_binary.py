@@ -148,11 +148,12 @@ def main(args):
     torch.backends.cudnn.benchmark = False
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    local_rank = os.getenv('LOCAL_RANK', -1)
+    local_rank = int(os.getenv('LOCAL_RANK', -1))  # 确保转换为整数
     if torch.cuda.device_count() > 1 and args.use_ddp == 1:
         print("Parallel training!")
         # os.environ["CUDA_VISIBLE_DEVICES"] = opts.gpu_ids
         if local_rank != -1:
+
             torch.cuda.set_device(local_rank)
             device = torch.device("cuda", local_rank)
             torch.distributed.init_process_group(backend="nccl", init_method='env://')
