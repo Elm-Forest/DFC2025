@@ -40,24 +40,24 @@ def train_augm(sample, size=512):
     augms = [
         # 旋转、平移、缩放
         A.ShiftScaleRotate(
-            scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.7
+            scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.5
         ),
 
         # 随机选择 Resize 或 RandomCrop
         A.OneOf([
             A.Resize(height=size, width=size, p=1.0),
-            A.RandomCrop(height=size, width=size, p=1.0)
-        ], p=1.0),  # 每次都会执行此操作，随机选择其中一个
-        # 水平翻转
+            A.RandomSizedCrop(min_max_height=(400, 700), size=(size, size), p=1.0),
+            # A.RandomCrop(height=size, width=size, p=1.0)
+        ], p=1.0),
+
+        # D4 dihedral group transformations
         A.HorizontalFlip(p=0.5),
-        # 垂直翻转
         A.VerticalFlip(p=0.5),
+        A.RandomRotate90(p=0.5),
+        A.Transpose(p=0.5),
+
         # 下采样
         A.Downscale(scale_range=(0.5, 0.75), p=0.05),
-
-        #
-
-
 
         # 保留变形和噪声相关增强
         A.OneOf(
@@ -74,19 +74,30 @@ def train_augm(sample, size=512):
                 # 透视变换（Perspective Transform）
                 A.Perspective(p=1),
             ],
-            p=0.2,
+            p=0.1,
+        ),
+
+        A.OneOf([
+            A.CLAHE(p=1),
+            A.Sharpen(p=1),
+            A.RandomGamma(gamma_limit=(60, 120), p=1),
+            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=1),
+        ],
+            p=0.3
         ),
 
         # 噪声增强
         A.OneOf(
             [
-                A.CLAHE(p=1),
-
                 A.GaussNoise(p=1),
                 A.MultiplicativeNoise(p=1),
-                A.Sharpen(p=1),
+                A.SaltAndPepper(p=1),
+                # Hard
+                A.Superpixels(p=1),
+
                 A.GaussianBlur(p=1),
                 A.AdvancedBlur(p=1.0),
+                A.MotionBlur(p=1),
                 A.MedianBlur(blur_limit=3, p=1),
             ],
             p=0.3,
