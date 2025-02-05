@@ -24,7 +24,7 @@ def creatModel(args,
         )
     elif args.model_name == 'mit_unet':
         print('Building mit_unet')
-        model = Net(phi=args.model_size, pretrained=args.pretrained)
+        model = Net(phi=args.model_size, pretrained=args.pretrained, num_classes=len(args.classes) + 1)
     elif args.model_name == 'segformer':
         print('Building Segformer')
         model = smp.Segformer(

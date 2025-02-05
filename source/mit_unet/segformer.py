@@ -110,7 +110,3 @@ class SegFormer(nn.Module):
         # x = self.decode_head.forward(x)
         # x = F.interpolate(x, size=(H, W), mode='bilinear', align_corners=True)
         return x, outs
-
-
-
-
