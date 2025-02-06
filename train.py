@@ -245,6 +245,7 @@ if __name__ == "__main__":
     parser.add_argument('--gpu_ids', type=str, default='0')
     parser.add_argument('--pretrained', type=str, default=None)
     parser.add_argument('--crop_size', type=int, default=512)
+    parser.add_argument('--change_size', type=int, default=0)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
     parser.add_argument('--lr_cycle', type=int, default=5)
     parser.add_argument('--warmup_epochs', type=int, default=3)

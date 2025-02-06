@@ -50,14 +50,23 @@ def creatModel(args,
         )
     elif args.model_name == 'uper':
         print('Building UPerNet')
-        model = smp.UPerNet(
-            classes=len(args.classes) + 1,
-            in_channels=in_channels,
-            activation=activation,
-            encoder_weights=encoder_weights,
-            encoder_name=encoder_name,
-            img_size=args.crop_size,
-        )
+        if args.change_size != 0:
+            model = smp.UPerNet(
+                classes=len(args.classes) + 1,
+                in_channels=in_channels,
+                activation=activation,
+                encoder_weights=encoder_weights,
+                encoder_name=encoder_name,
+                img_size=args.crop_size,
+            )
+        else:
+            model = smp.UPerNet(
+                classes=len(args.classes) + 1,
+                in_channels=in_channels,
+                activation=activation,
+                encoder_weights=encoder_weights,
+                encoder_name=encoder_name,
+            )
     elif args.model_name == 'unetp':
         print('Building Unet++')
         model = smp.UnetPlusPlus(
