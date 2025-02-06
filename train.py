@@ -38,7 +38,7 @@ def data_loader(args):
     print("Validation samples :", len(val_pths))
 
     trainset = source.dataset.Dataset(train_pths, classes=args.classes, size=args.crop_size, train=True)
-    validset = source.dataset.Dataset(val_pths, classes=args.classes, train=False)
+    validset = source.dataset.Dataset(val_pths, classes=args.classes, size=args.val_size, train=False)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.num_workers,
                               pin_memory=True)
@@ -245,6 +245,7 @@ if __name__ == "__main__":
     parser.add_argument('--gpu_ids', type=str, default='0')
     parser.add_argument('--pretrained', type=str, default=None)
     parser.add_argument('--crop_size', type=int, default=512)
+    parser.add_argument('--val_size', type=int, default=1024)
     parser.add_argument('--change_size', type=int, default=0)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
     parser.add_argument('--lr_cycle', type=int, default=5)
