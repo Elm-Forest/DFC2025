@@ -52,6 +52,7 @@ def creatModel(args,
         print('Building UPerNet')
         if args.change_size != 0:
             # only for swin transformer
+            print('Building Swin UPerNet')
             model = smp.UPerNet(
                 classes=len(args.classes) + 1,
                 in_channels=in_channels,
@@ -69,6 +70,18 @@ def creatModel(args,
                 encoder_weights=encoder_weights,
                 encoder_name=encoder_name,
             )
+    elif args.model_name == 'eva':
+        print('Building Eva UPerNet')
+        model = smp.UPerNet(
+            classes=len(args.classes) + 1,
+            in_channels=in_channels,
+            activation=activation,
+            encoder_weights=encoder_weights,
+            encoder_name=encoder_name,
+            dynamic_img_size=True,
+            dynamic_img_pad=True,
+            img_size=args.crop_size,
+        )
     elif args.model_name == 'unetp':
         print('Building Unet++')
         model = smp.UnetPlusPlus(
