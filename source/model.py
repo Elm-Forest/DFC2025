@@ -51,12 +51,14 @@ def creatModel(args,
     elif args.model_name == 'uper':
         print('Building UPerNet')
         if args.change_size != 0:
+            # only for swin transformer
             model = smp.UPerNet(
                 classes=len(args.classes) + 1,
                 in_channels=in_channels,
                 activation=activation,
                 encoder_weights=encoder_weights,
                 encoder_name=encoder_name,
+                strict_img_size=False,
                 img_size=args.crop_size,
             )
         else:

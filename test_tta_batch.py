@@ -27,7 +27,7 @@ def data_loader(args):
 
     print("Total samples      :", len(img_pths))
 
-    test_set = source.dataset.Dataset(img_pths, classes=args.classes, train=False)
+    test_set = source.dataset.Dataset(img_pths, classes=args.classes, train=False,size=args.crop_size)
     test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     return test_loader
@@ -145,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=0)
+    parser.add_argument('--crop_size', type=int, default=1024)
     parser.add_argument('--pretrained', type=str, default='model/SAR_Pesudo_model_s0_CELoss.pth')
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
