@@ -141,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', default=0)
     parser.add_argument('--model_name', default="uper")
     parser.add_argument('--encoder_name', default="mit_b5")
+    parser.add_argument('--crop_size', type=int, default=1024)
     parser.add_argument('--classes', default=[1, 2, 3, 4, 5, 6, 7, 8])
     parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
     parser.add_argument('--pretrained_model', default="model/SAR_Pesudo_uper_mitb5_exp_ep40_337.pth")

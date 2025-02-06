@@ -21,10 +21,13 @@ def creatModel(args,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name='tu-sam2_hiera_large',
+            img_size=args.crop_size,
         )
     elif args.model_name == 'mit_unet':
         print('Building mit_unet')
-        model = Net(phi=args.model_size, pretrained=args.pretrained, num_classes=len(args.classes) + 1)
+        model = Net(phi=args.model_size,
+                    pretrained=args.pretrained,
+                    num_classes=len(args.classes) + 1)
     elif args.model_name == 'segformer':
         print('Building Segformer')
         model = smp.Segformer(
@@ -33,6 +36,7 @@ def creatModel(args,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
+            img_size=args.crop_size,
         )
     elif args.model_name == 'deeplab':
         print('Building DeepLabV3+')
@@ -42,6 +46,7 @@ def creatModel(args,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
+            img_size=args.crop_size,
         )
     elif args.model_name == 'uper':
         print('Building UPerNet')
@@ -51,6 +56,7 @@ def creatModel(args,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
+            img_size=args.crop_size,
         )
     elif args.model_name == 'unetp':
         print('Building Unet++')
@@ -61,6 +67,7 @@ def creatModel(args,
             decoder_attention_type='scse',
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
+            img_size=args.crop_size,
         )
     elif args.model_name == 'psp':
         print('Building PSPNet')
@@ -70,6 +77,7 @@ def creatModel(args,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
+            img_size=args.crop_size,
         )
     elif args.model_name == 'ma':
         print('Building MAnet')
@@ -79,6 +87,7 @@ def creatModel(args,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
+            img_size=args.crop_size,
         )
     elif args.model_name == 'link':
         print('Building Linknet')
@@ -88,6 +97,7 @@ def creatModel(args,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
+            img_size=args.crop_size,
         )
     else:
         print('Building Segformer')
@@ -97,6 +107,7 @@ def creatModel(args,
             activation=activation,
             encoder_weights=encoder_weights,
             encoder_name=encoder_name,
+            img_size=args.crop_size,
         )
     return model
 

@@ -142,6 +142,7 @@ if __name__ == "__main__":
     parser.add_argument('--model_name', default="deeplab")
     parser.add_argument('--encoder_name', default="mit_b4")
     parser.add_argument('--classes', default=[8])
+    parser.add_argument('--crop_size', type=int, default=1024)
     parser.add_argument('--data_root', default="K:/dataset/dfc25/val")
     parser.add_argument('--pretrained_model', default="model/cid8_building_deeplab_mitb4_exp_s0_CELoss.pth")
     parser.add_argument('--save_results', default="8_result_building")
