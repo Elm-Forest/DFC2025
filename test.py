@@ -130,12 +130,12 @@ def main(args):
         ]
     )
     model = tta.SegmentationTTAWrapper(model, transforms, merge_mode='mean')
-    model.to(device).eval()
     if torch.cuda.device_count() > 1:
         print("Using DP")
         print("Number of GPUs :", torch.cuda.device_count())
         model = torch.nn.DataParallel(model)
     # test model
+    model.to(device).eval()
     test_model(args, model, device)
 
 
