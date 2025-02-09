@@ -127,7 +127,7 @@ def linear_mapping(mask, new_min=1, new_max=255):
 
 
 class Dataset_Fusion(BaseDataset):
-    def __init__(self, label_list, ensemble_folders, classes=None, size=128, train=False):
+    def __init__(self, label_list, ensemble_folders, classes=None, size=1024, train=False):
         self.fns = label_list
         self.ensemble_folders = ensemble_folders
         self.augm = T.train_augm_multiple if train else T.valid_augm_multiple
@@ -154,7 +154,7 @@ class Dataset_Fusion(BaseDataset):
         if self.train:
             data = self.augm({"image": img, "mask": msk, "image_ensemble": ensemble_outputs}, self.size)
         else:
-            data = self.augm({"image": img, "mask": msk, "image_ensemble": ensemble_outputs}, 1024)
+            data = self.augm({"image": img, "mask": msk, "image_ensemble": ensemble_outputs}, self.size)
 
         data = self.to_tensor(data)
 
