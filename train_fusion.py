@@ -266,6 +266,7 @@ if __name__ == "__main__":
     parser.add_argument("--local-rank", default=os.getenv('LOCAL_RANK', -1), type=int)
     parser.add_argument('--use_ddp', type=int, default=0)
     parser.add_argument('--use_amp', type=int, default=1)
+    parser.add_argument('--test_eval', type=int, default=0)
     parser.add_argument('--use_binary_aug', action="store_true")
     parser.add_argument('--classes', type=int, nargs='*', default=[1, 2, 3, 4, 5, 6, 7, 8])
     # parser.add_argument('--ensemble_folders', type=str, nargs='*', default=[

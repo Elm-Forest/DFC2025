@@ -202,12 +202,14 @@ def valid_epoch_ensemble(
         metric=None,
         dataloader=None,
         device="cpu",
+        args=None,
 ):
     loss_meter = AverageMeter()
     score_meter = AverageMeter()
     logs = {}
-    model.to(device).eval()
-
+    model.to(device)
+    if args.test_eval:
+        model.eval()
     with tqdm(dataloader, desc="Valid") as iterator:
         for sample in iterator:
             x = sample["x"].to(device)
