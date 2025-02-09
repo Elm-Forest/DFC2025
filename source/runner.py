@@ -1,3 +1,4 @@
+from torch import nn
 from tqdm import tqdm
 
 
@@ -121,6 +122,16 @@ def valid_epoch(
     return logs
 
 
+def disable_batchnorm(model):
+    for module in model.modules():
+        if isinstance(module, nn.BatchNorm2d):
+            # 将BatchNorm替换为Identity层
+            module.training = False  # 禁用训练模式
+            module.track_running_stats = False  # 禁用统计更新
+            module.running_mean = module.running_mean  # 保持当前的均值
+            module.running_var = module.running_var  # 保持当前的方差
+
+
 def train_epoch_ensemble(
         model=None,
         optimizer=None,
@@ -145,6 +156,8 @@ def train_epoch_ensemble(
     scaler = GradScaler()
 
     model.to(device).train()
+    disable_batchnorm(model.encoder_s2)
+    disable_batchnorm(model.encoder_sar)
     with tqdm(dataloader, desc="Train") as iterator:
         for sample in iterator:
             x = sample["x"].to(device)
@@ -155,7 +168,7 @@ def train_epoch_ensemble(
             optimizer.zero_grad()
 
             # Forward pass with AMP
-            with autocast():  # Automatic mixed precision context
+            with autocast(enabled=args.use_amp):  # Automatic mixed precision context
                 outputs = model(esb, x)
                 loss_ce = criterion(outputs, y)
                 loss_focal = focal_loss(outputs, y)
@@ -203,7 +216,7 @@ def valid_epoch_ensemble(
             n = x.shape[0]
 
             with torch.no_grad():
-                outputs = model.forward(esb, x)
+                outputs = model(esb, x)
                 loss = criterion(outputs, y)
 
             loss_meter.update(loss.cpu().detach().numpy(), n=n)

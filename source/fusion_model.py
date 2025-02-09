@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import segmentation_models_pytorch as smp
+from efficientnet_pytorch import EfficientNet
 from torch.nn import init
 from torch.utils.checkpoint import checkpoint
 
@@ -207,6 +208,7 @@ class Efficient_UAF(nn.Module):
                  bilinear=True,
                  cuda=True):
         super(Efficient_UAF, self).__init__()
+        EfficientNet
         self.encoder_sar = smp.encoders.get_encoder(
             name='efficientnet-b4',
             in_channels=in_channels_sar,
