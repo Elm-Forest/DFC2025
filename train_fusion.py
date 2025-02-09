@@ -124,6 +124,7 @@ def train_model(args, model, optimizer, criterion, metric, device):
             metric=metric,
             dataloader=val_data_loader,
             device=device,
+            args=args
         )
 
         train_hist.append(logs_train)
