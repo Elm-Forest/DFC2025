@@ -175,7 +175,7 @@ def main(args):
 
     model = UAF(in_channels_sar=1,
                 in_channels_single=1,
-                ensemble_num=5,
+                ensemble_num=len(args.ensemble_folders),
                 classes=len(args.classes) + 1)
 
     # count parameters

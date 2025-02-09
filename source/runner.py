@@ -158,7 +158,6 @@ def train_epoch_ensemble(
             with autocast():  # Automatic mixed precision context
                 outputs = model(esb, x)
                 loss_ce = criterion(outputs, y)
-                print(loss_ce.item())
                 loss_focal = focal_loss(outputs, y)
                 loss_lovasz = lovasz_loss(outputs.contiguous(), y)
                 w_ce, w_focal, w_lovasz = args.weight_ce_focal_lovasz[0], args.weight_ce_focal_lovasz[1], \
