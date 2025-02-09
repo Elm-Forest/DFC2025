@@ -68,7 +68,7 @@ def train_epoch(
                 loss_focal = focal_loss(outputs, y)
                 loss_lovasz = lovasz_loss(outputs.contiguous(), y)
                 w_ce, w_focal, w_lovasz = args.weight_ce_focal_lovasz[0], args.weight_ce_focal_lovasz[1], \
-                args.weight_ce_focal_lovasz[2]
+                    args.weight_ce_focal_lovasz[2]
                 loss = w_ce * loss_ce + w_lovasz * loss_lovasz + w_focal * loss_focal
 
             # Backward pass with AMP
@@ -121,7 +121,7 @@ def valid_epoch(
     return logs
 
 
-def train_epoch2(
+def train_epoch_ensemble(
         model=None,
         optimizer=None,
         criterion=None,
@@ -130,34 +130,61 @@ def train_epoch2(
         device="cpu",
         loss_meter=None,
         score_meter=None,
+        dice_loss=None,
+        lovasz_loss=None,
+        focal_loss=None,
+        args=None
 ):
     loss_meter = AverageMeter()
+    loss_meter_ce = AverageMeter()
+    loss_meter_lovasz = AverageMeter()
     score_meter = AverageMeter()
     logs = {}
+
+    # Initialize AMP scaler
+    scaler = GradScaler()
 
     model.to(device).train()
     with tqdm(dataloader, desc="Train") as iterator:
         for sample in iterator:
             x = sample["x"].to(device)
-            y = sample["z"].to(device)
+            y = sample["y"].to(device)
+            esb = sample["img_esb"].to(device)
             n = x.shape[0]
 
             optimizer.zero_grad()
-            outputs = model.forward(x)
-            loss = criterion(outputs, y)
-            loss.backward()
-            optimizer.step()
+
+            # Forward pass with AMP
+            with autocast():  # Automatic mixed precision context
+                outputs = model(esb, x)
+                loss_ce = criterion(outputs, y)
+                print(loss_ce.item())
+                loss_focal = focal_loss(outputs, y)
+                loss_lovasz = lovasz_loss(outputs.contiguous(), y)
+                w_ce, w_focal, w_lovasz = args.weight_ce_focal_lovasz[0], args.weight_ce_focal_lovasz[1], \
+                    args.weight_ce_focal_lovasz[2]
+                loss = w_ce * loss_ce + w_lovasz * loss_lovasz + w_focal * loss_focal
+
+            # Backward pass with AMP
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()  # Update the scaler for the next iteration
 
             loss_meter.update(loss.cpu().detach().numpy(), n=n)
+            loss_meter_ce.update((loss_ce + loss_focal).cpu().detach().numpy(), n=n)
+            loss_meter_lovasz.update(loss_focal.cpu().detach().numpy(), n=n)
             score_meter.update(metric(outputs, y).cpu().detach().numpy(), n=n)
 
-            logs.update({"MSE": loss_meter.avg})
             logs.update({metric.name: score_meter.avg})
+            logs.update({'ce': loss_meter_ce.avg})
+            logs.update({'lovasz': loss_meter_lovasz.avg})
+
             iterator.set_postfix_str(format_logs(logs))
+
     return logs
 
 
-def valid_epoch2(
+def valid_epoch_ensemble(
         model=None,
         criterion=None,
         metric=None,
@@ -172,16 +199,18 @@ def valid_epoch2(
     with tqdm(dataloader, desc="Valid") as iterator:
         for sample in iterator:
             x = sample["x"].to(device)
-            y = sample["z"].to(device)
+            y = sample["y"].to(device)
+            esb = sample["img_esb"].to(device)
             n = x.shape[0]
 
             with torch.no_grad():
-                outputs = model.forward(x)
+                outputs = model.forward(esb, x)
                 loss = criterion(outputs, y)
 
             loss_meter.update(loss.cpu().detach().numpy(), n=n)
             score_meter.update(metric(outputs, y).cpu().detach().numpy(), n=n)
-            logs.update({"MSE": loss_meter.avg})
+
+            logs.update({criterion.name: loss_meter.avg})
             logs.update({metric.name: score_meter.avg})
             iterator.set_postfix_str(format_logs(logs))
     return logs

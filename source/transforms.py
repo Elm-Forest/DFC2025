@@ -28,6 +28,15 @@ def valid_augm(sample, size=512):
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
 
 
+def valid_augm_multiple(sample, size=512):
+    augms = [A.Resize(height=size, width=size, p=1.0)]
+    return A.Compose(augms, additional_targets={
+        'image': 'image',
+        'image_ensemble': 'image',
+        'mask': 'mask',
+    })(image=sample["image"], image_ensemble=sample['image_ensemble'], mask=sample["mask"])
+
+
 def test_augm(sample):
     augms = [A.Flip(p=0.1)]
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
@@ -156,6 +165,34 @@ def train_augm_binary(sample, size=512):
     ]
 
     return A.Compose(augms)(image=sample["image"], mask=sample["mask"])
+
+
+def train_augm_multiple(sample, size=512):
+    augms = [
+        # 旋转、平移、缩放
+        A.ShiftScaleRotate(
+            scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.5
+        ),
+
+        # 随机选择 Resize 或 RandomCrop
+        A.OneOf([
+            A.Resize(height=size, width=size, p=1.0),
+            A.RandomSizedCrop(min_max_height=(400, 700), size=(size, size), p=1.0),
+            # A.RandomCrop(height=size, width=size, p=1.0)
+        ], p=1.0),
+
+        # D4 dihedral group transformations
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
+        A.RandomRotate90(p=0.5),
+        A.Transpose(p=0.5),
+    ]
+
+    return A.Compose(augms, additional_targets={
+        'image': 'image',
+        'image_ensemble': 'image',
+        'mask': 'mask',
+    })(image=sample["image"], image_ensemble=sample['image_ensemble'], mask=sample["mask"])
 
 
 def train_augm3(sample, size=512):
