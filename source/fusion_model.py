@@ -198,17 +198,99 @@ class UAF(nn.Module):
         return logit
 
 
+class Efficient_UAF(nn.Module):
+    def __init__(self,
+                 in_channels_sar=1,
+                 in_channels_single=1,
+                 classes=8,
+                 ensemble_num=2,
+                 bilinear=True,
+                 cuda=True):
+        super(Efficient_UAF, self).__init__()
+        self.encoder_sar = smp.encoders.get_encoder(
+            name='efficientnet-b4',
+            in_channels=in_channels_sar,
+            depth=5,
+            weights='imagenet'
+        )
+        self.encoder_s2 = smp.encoders.get_encoder(
+            name='efficientnet-b4',
+            in_channels=in_channels_single * ensemble_num,
+            depth=5,
+            weights='imagenet'
+        )
+        ch_list = self.encoder_s2.out_channels
+        self.fb1 = Fusion_Blocks_Plus(ch_list[1] * 2, ch_list[1], cuda=cuda)
+        self.fb2 = Fusion_Blocks_Plus(ch_list[2] * 2, ch_list[2], cuda=cuda)
+        self.fb3 = Fusion_Blocks_Plus(ch_list[3] * 2, ch_list[3], cuda=cuda)
+        self.fb4 = Fusion_Blocks_Plus(ch_list[4] * 2, ch_list[4], cuda=cuda)
+        self.fb5 = Fusion_Blocks_Plus(ch_list[5] * 2, ch_list[5], cuda=cuda)
+
+        self.center = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
+
+        self.up1 = (Up(ch_list[5] + ch_list[4], 256, bilinear))
+        self.up2 = (Up(256 + ch_list[3], 128, bilinear))
+        self.up3 = (Up(128 + ch_list[2], 64, bilinear))
+        self.up4 = (Up(64 + ch_list[1], 64, bilinear))
+
+        ch = 256 + 128 + 64 + 64
+        self.logit = nn.Sequential(
+            nn.Conv2d(ch, 64, kernel_size=3, padding=1),
+            nn.ELU(inplace=True),
+            nn.Conv2d(64, classes, kernel_size=1, padding=0),
+            nn.UpsamplingBilinear2d(scale_factor=2)
+        )
+
+    def forward(self, x1, x2):
+        x1, x11, x12, x13, x14, x15 = checkpoint(self.encoder_s2, x1)
+        x2, x21, x22, x23, x24, x25 = checkpoint(self.encoder_sar, x2)
+
+        # Feat
+        x1 = self.fb1(x11, x21)
+        x2 = self.fb2(x12, x22)
+        x3 = self.fb3(x13, x23)
+        x4 = self.fb4(x14, x24)
+        x5 = self.fb5(x15, x25)
+
+        # decoder
+        d4 = self.up1(x5, x4)
+        d3 = self.up2(d4, x3)
+        d2 = self.up3(d3, x2)
+        d1 = self.up4(d2, x1)
+
+        # seg out
+        f = torch.cat((
+            d1,
+            F.upsample(d2, scale_factor=2, mode='bilinear', align_corners=False),
+            F.upsample(d3, scale_factor=4, mode='bilinear', align_corners=False),
+            F.upsample(d4, scale_factor=8, mode='bilinear', align_corners=False),
+        ), 1)
+
+        f = F.dropout2d(f, p=0.50)
+        logit = self.logit(f)
+        return logit
+
+
 if __name__ == '__main__':
     bs = 1
     nc = 8 + 1
-    sar_array = torch.randn(bs, 1, 512, 512)
-    tensor_array1 = torch.randn(bs, 1, 512, 512)
-    tensor_array2 = torch.randn(bs, 1, 512, 512)
-    tensor_array3 = torch.randn(bs, 1, 512, 512)
-    tensor_array4 = torch.randn(bs, 1, 512, 512)
-    tensor_array5 = torch.randn(bs, 1, 512, 512)
+    size = 256
+    sar_array = torch.randn(bs, 1, size, size)
+    tensor_array1 = torch.randn(bs, 1, size, size)
+    tensor_array2 = torch.randn(bs, 1, size, size)
+    tensor_array3 = torch.randn(bs, 1, size, size)
+    tensor_array4 = torch.randn(bs, 1, size, size)
+    tensor_array5 = torch.randn(bs, 1, size, size)
     tensor_stack = torch.cat([tensor_array1, tensor_array2, tensor_array3, tensor_array4, tensor_array5], dim=1)
-    model = UAF(in_channels_sar=1, in_channels_single=1, ensemble_num=5, classes=nc)
+    model = Efficient_UAF(in_channels_sar=1, in_channels_single=1, ensemble_num=5, classes=nc)
     model.eval().cuda()
     result = model(tensor_stack.cuda(), sar_array.cuda())
     print(result.shape)

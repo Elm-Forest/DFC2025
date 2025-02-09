@@ -84,8 +84,8 @@ class CompactBilinearPooling(nn.Module):
         sketch_1 = bottom1_flat.mm(self.sparse_sketch_matrix1)
         sketch_2 = bottom2_flat.mm(self.sparse_sketch_matrix2)
 
-        fft1 = afft.fft(sketch_1)
-        fft2 = afft.fft(sketch_2)
+        fft1 = afft.fft(sketch_1.to(torch.float32))
+        fft2 = afft.fft(sketch_2.to(torch.float32))
 
         fft_product = fft1 * fft2
 
@@ -95,7 +95,7 @@ class CompactBilinearPooling(nn.Module):
 
         if self.sum_pool:
             cbp = cbp.sum(dim=1).sum(dim=1)
-
+        cbp = cbp.to(sketch_1.dtype)
         return cbp
 
     @staticmethod

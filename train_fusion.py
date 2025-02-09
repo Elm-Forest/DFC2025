@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 
 import source
 from source.dataset import Dataset_Fusion
-from source.fusion_model import UAF
+from source.fusion_model import UAF, Efficient_UAF
 from source.lovasz_losses import LovaszLoss
 from source.polyloss import Poly1FocalLoss
 
@@ -173,7 +173,7 @@ def main(args):
     #     decoder_attention_type="scse",
     # )
 
-    model = UAF(in_channels_sar=1,
+    model = Efficient_UAF(in_channels_sar=1,
                 in_channels_single=1,
                 ensemble_num=len(args.ensemble_folders),
                 classes=len(args.classes) + 1)
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     parser.add_argument('--gpu_ids', type=str, default='0')
     parser.add_argument('--pretrained', type=str,
                         default='E:\Development Program\Pycharm Program\cloud_remover_head\checkpoint\checkpoint_9504_big.pth')
-    parser.add_argument('--crop_size', type=int, default=256)
+    parser.add_argument('--crop_size', type=int, default=512)
     parser.add_argument('--val_size', type=int, default=1024)
     parser.add_argument('--change_size', type=int, default=0)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
