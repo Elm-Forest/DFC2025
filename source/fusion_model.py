@@ -6,7 +6,6 @@ from torch.utils.checkpoint import checkpoint
 
 from source.cbam import CBAM
 from source.compact_bilinear_pooling import CompactBilinearPooling
-from source.solc.aspp import BasicRFB
 from source.unet_parts import *
 
 

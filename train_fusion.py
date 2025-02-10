@@ -258,7 +258,7 @@ if __name__ == "__main__":
     parser.add_argument('--focal_alpha_gamma', type=float, nargs='*', default=[0.25, 2.0])
     parser.add_argument('--weight_ce_focal_lovasz', type=float, nargs='*', default=[0.35, 0.5, 0.15])
     parser.add_argument('--gpu_ids', type=str, default='0')
-    parser.add_argument('--pretrained', type=str,default=None)
+    parser.add_argument('--pretrained', type=str, default=None)
     parser.add_argument('--crop_size', type=int, default=512)
     parser.add_argument('--val_size', type=int, default=512)
     parser.add_argument('--change_size', type=int, default=0)
