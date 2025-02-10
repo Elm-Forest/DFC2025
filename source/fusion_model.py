@@ -123,17 +123,22 @@ class Fusion_Blocks_Plus(nn.Module):
 class Fusion_Block(nn.Module):
     def __init__(self, in_feat, out_feat, cuda=True):
         super(Fusion_Block, self).__init__()
-        self.cbp = CompactBilinearPooling(in_feat // 2, in_feat // 2, out_feat, sum_pool=False, cuda=cuda)
-        # self.cbam1 = CBAM(in_feat, no_spatial=False)
-        # self.cbam2 = CBAM(in_feat, no_spatial=False)
-        # self.conv1 = conv1x1(in_feat, out_feat)
-        # self.conv2 = conv1x1(in_feat, out_feat)
-        # self.relu = nn.ReLU(inplace=True)
-        # init.kaiming_normal_(self.conv1.weight, mode='fan_out', nonlinearity='relu')
-        # init.kaiming_normal_(self.conv2.weight, mode='fan_out', nonlinearity='relu')
+        self.conv3x3 = conv3x3(in_feat, in_feat)
+        self.bn = nn.BatchNorm2d(in_feat)
+        self.cbam = CBAM(in_feat, no_spatial=False)
+        self.conv1x1 = conv1x1(in_feat, out_feat)
+        self.relu = nn.Hardswish(inplace=True)
+        init.kaiming_normal_(self.conv3x3.weight, mode='fan_out', nonlinearity='relu')
+        init.kaiming_normal_(self.conv1x1.weight, mode='fan_out', nonlinearity='relu')
 
     def forward(self, x1, x2):
-        x = self.cbp(x1, x2).permute(0, 3, 1, 2)
+        x = torch.cat((x1, x2), dim=1)
+        x = self.conv3x3(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        x = self.cbam(x)
+        x = self.conv1x1(x)
+        x = self.relu(x)
         return x
 
 
@@ -239,10 +244,14 @@ class Efficient_UAF(nn.Module):
             weights='imagenet'
         )
         ch_list = self.encoder_s2.out_channels
-        self.fb1 = Fusion_Block(ch_list[1] * 2, ch_list[1], cuda=cuda)
-        self.fb2 = Fusion_Block(ch_list[2] * 2, ch_list[2], cuda=cuda)
-        self.fb3 = Fusion_Block(ch_list[3] * 2, ch_list[3], cuda=cuda)
-        self.fb4 = Fusion_Block(ch_list[4] * 2, ch_list[4], cuda=cuda)
+        # self.conv1 = nn.Sequential(
+        #     nn.Conv2d(in_channels_sar, 64, kernel_size=3, padding=1),
+        #     nn.ELU(inplace=True),
+        # )
+        self.fb1 = Fusion_Blocks_Plus(ch_list[1] * 2, ch_list[1], cuda=cuda)
+        self.fb2 = Fusion_Blocks_Plus(ch_list[2] * 2, ch_list[2], cuda=cuda)
+        self.fb3 = Fusion_Blocks_Plus(ch_list[3] * 2, ch_list[3], cuda=cuda)
+        self.fb4 = Fusion_Blocks_Plus(ch_list[4] * 2, ch_list[4], cuda=cuda)
         # self.fb5 = Fusion_Blocks_Plus(ch_list[5] * 2, ch_list[5], cuda=cuda)
         self.fb5 = Fusion_Blocks_Plus(ch_list[5] * 2, ch_list[5], cuda=cuda)
         # self.aspp = BasicRFB(ch_list[5] * 2, ch_list[5], map_reduce=8)
@@ -311,7 +320,11 @@ if __name__ == '__main__':
     tensor_array4 = torch.randn(bs, 1, size, size)
     tensor_array5 = torch.randn(bs, 1, size, size)
     tensor_stack = torch.cat([tensor_array1, tensor_array2, tensor_array3, tensor_array4, tensor_array5], dim=1)
-    model = Efficient_UAF(in_channels_sar=1, in_channels_single=1, ensemble_num=5, classes=nc)
+    model = Efficient_UAF(in_channels_sar=1,
+                          in_channels_single=1,
+                          ensemble_num=5,
+                          encoder_name='tu-convnext_small',
+                          classes=nc)
     model.eval().cuda()
     result = model(tensor_stack.cuda(), sar_array.cuda())
     print(result.shape)

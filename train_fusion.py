@@ -247,7 +247,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--n_epochs', type=int, default=10)
     parser.add_argument('--model_name', default="deeplab")
-    parser.add_argument('--encoder_name', default="tu-convnextv2_base")
+    parser.add_argument('--encoder_name', default="efficientnet-b4")
     parser.add_argument('--model_size', default="b4")
     parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--batch_size_val', type=int, default=4)
