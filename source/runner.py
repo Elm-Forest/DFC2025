@@ -170,6 +170,7 @@ def train_epoch_ensemble(
             # Forward pass with AMP
             with autocast(enabled=bool(args.use_amp)):  # Automatic mixed precision context
                 outputs = model(esb, x)
+                # outputs = model(x, esb)
                 loss_ce = criterion(outputs, y)
                 loss_focal = focal_loss(outputs, y)
                 loss_lovasz = lovasz_loss(outputs.contiguous(), y)

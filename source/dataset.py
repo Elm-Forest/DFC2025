@@ -144,9 +144,9 @@ class Dataset_Fusion(BaseDataset):
 
         ensemble_outputs = []
         for folder in self.ensemble_folders:
-            model_output_path = os.path.join(folder, f"{file_name_no_extension}.tif")
-            im_array = self.load_png(model_output_path)
-            im_array = linear_mapping(im_array)
+            model_output_path = os.path.join(folder, f"{file_name_no_extension}.png")
+            im_array = self.load_png(model_output_path) ** 2
+            # im_array = linear_mapping(im_array)
             ensemble_outputs.append(np.expand_dims(im_array, axis=-1))
         ensemble_outputs = np.concatenate(ensemble_outputs, axis=-1)
         msk = self.load_grayscale(self.fns[idx])

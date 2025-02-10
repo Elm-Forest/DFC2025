@@ -1,12 +1,12 @@
 from collections import OrderedDict
 
 import segmentation_models_pytorch as smp
-from efficientnet_pytorch import EfficientNet
 from torch.nn import init
 from torch.utils.checkpoint import checkpoint
 
 from source.cbam import CBAM
 from source.compact_bilinear_pooling import CompactBilinearPooling
+from source.solc.aspp import BasicRFB
 from source.unet_parts import *
 
 
@@ -103,7 +103,8 @@ class Fusion_Blocks_Plus(nn.Module):
         self.cbam2 = CBAM(in_feat, no_spatial=False)
         self.conv1 = conv1x1(in_feat, out_feat)
         self.conv2 = conv1x1(in_feat, out_feat)
-        self.relu = nn.ReLU(inplace=True)
+        # self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.Hardswish(inplace=True)
         init.kaiming_normal_(self.conv1.weight, mode='fan_out', nonlinearity='relu')
         init.kaiming_normal_(self.conv2.weight, mode='fan_out', nonlinearity='relu')
 
@@ -117,6 +118,23 @@ class Fusion_Blocks_Plus(nn.Module):
         x = self.cbam2(x)
         x = self.conv2(x)
         x = self.relu(x)
+        return x
+
+
+class Fusion_Block(nn.Module):
+    def __init__(self, in_feat, out_feat, cuda=True):
+        super(Fusion_Block, self).__init__()
+        self.cbp = CompactBilinearPooling(in_feat // 2, in_feat // 2, out_feat, sum_pool=False, cuda=cuda)
+        # self.cbam1 = CBAM(in_feat, no_spatial=False)
+        # self.cbam2 = CBAM(in_feat, no_spatial=False)
+        # self.conv1 = conv1x1(in_feat, out_feat)
+        # self.conv2 = conv1x1(in_feat, out_feat)
+        # self.relu = nn.ReLU(inplace=True)
+        # init.kaiming_normal_(self.conv1.weight, mode='fan_out', nonlinearity='relu')
+        # init.kaiming_normal_(self.conv2.weight, mode='fan_out', nonlinearity='relu')
+
+    def forward(self, x1, x2):
+        x = self.cbp(x1, x2).permute(0, 3, 1, 2)
         return x
 
 
@@ -201,6 +219,7 @@ class UAF(nn.Module):
 
 class Efficient_UAF(nn.Module):
     def __init__(self,
+                 encoder_name='efficientnet-b4',
                  in_channels_sar=1,
                  in_channels_single=1,
                  classes=8,
@@ -208,35 +227,35 @@ class Efficient_UAF(nn.Module):
                  bilinear=True,
                  cuda=True):
         super(Efficient_UAF, self).__init__()
-        EfficientNet
         self.encoder_sar = smp.encoders.get_encoder(
-            name='efficientnet-b4',
+            name=encoder_name,
             in_channels=in_channels_sar,
             depth=5,
             weights='imagenet'
         )
         self.encoder_s2 = smp.encoders.get_encoder(
-            name='efficientnet-b4',
+            name=encoder_name,
             in_channels=in_channels_single * ensemble_num,
             depth=5,
             weights='imagenet'
         )
         ch_list = self.encoder_s2.out_channels
-        self.fb1 = Fusion_Blocks_Plus(ch_list[1] * 2, ch_list[1], cuda=cuda)
-        self.fb2 = Fusion_Blocks_Plus(ch_list[2] * 2, ch_list[2], cuda=cuda)
-        self.fb3 = Fusion_Blocks_Plus(ch_list[3] * 2, ch_list[3], cuda=cuda)
-        self.fb4 = Fusion_Blocks_Plus(ch_list[4] * 2, ch_list[4], cuda=cuda)
+        self.fb1 = Fusion_Block(ch_list[1] * 2, ch_list[1], cuda=cuda)
+        self.fb2 = Fusion_Block(ch_list[2] * 2, ch_list[2], cuda=cuda)
+        self.fb3 = Fusion_Block(ch_list[3] * 2, ch_list[3], cuda=cuda)
+        self.fb4 = Fusion_Block(ch_list[4] * 2, ch_list[4], cuda=cuda)
+        # self.fb5 = Fusion_Blocks_Plus(ch_list[5] * 2, ch_list[5], cuda=cuda)
         self.fb5 = Fusion_Blocks_Plus(ch_list[5] * 2, ch_list[5], cuda=cuda)
-
-        self.center = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(512, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+        # self.aspp = BasicRFB(ch_list[5] * 2, ch_list[5], map_reduce=8)
+        # self.center = nn.Sequential(
+        #     nn.Conv2d(512, 512, kernel_size=3, padding=1),
+        #     nn.BatchNorm2d(512),
+        #     nn.ReLU(inplace=True),
+        #     nn.Conv2d(512, 256, kernel_size=3, padding=1),
+        #     nn.BatchNorm2d(256),
+        #     nn.ReLU(inplace=True),
+        #     nn.MaxPool2d(kernel_size=2, stride=2),
+        # )
 
         self.up1 = (Up(ch_list[5] + ch_list[4], 256, bilinear))
         self.up2 = (Up(256 + ch_list[3], 128, bilinear))
@@ -261,6 +280,7 @@ class Efficient_UAF(nn.Module):
         x3 = self.fb3(x13, x23)
         x4 = self.fb4(x14, x24)
         x5 = self.fb5(x15, x25)
+        # x5 = self.aspp(torch.cat((x15, x25), dim=1))
 
         # decoder
         d4 = self.up1(x5, x4)
