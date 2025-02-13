@@ -48,7 +48,7 @@ def save_img(path, img, crs, transform):
 class Dataset(BaseDataset):
     def __init__(self, label_list, classes=None, size=128, train=False):
         self.fns = label_list
-        self.augm = T.train_augm if train else T.valid_augm
+        self.augm = T.train_augm_d4 if train else T.valid_augm
         self.size = size
         self.train = train
         self.to_tensor = T.ToTensor(classes=classes)
