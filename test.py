@@ -135,7 +135,12 @@ def main(args):
         print("Number of GPUs :", torch.cuda.device_count())
         model = torch.nn.DataParallel(model)
     # test model
-    model.to(device).eval()
+    model.to(device).train()
+    for name, module in model.named_modules():
+        if isinstance(module, torch.nn.Dropout):
+            print(f"Dropout found in: {name}")
+            # 禁用 Dropout
+            module.training = False
     test_model(args, model, device)
 
 
